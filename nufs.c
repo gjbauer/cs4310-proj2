@@ -23,6 +23,31 @@
 
 dirent nul;
 
+char *split(const char *path, int n) {
+	int rv=0;
+	char *splt = (char*)calloc(DIR_NAME, sizeof(char));
+	if (n==0) {
+		strcpy(splt, "/");
+	} else {
+		int c=0, i=0;
+		for (; path[i] && c<n+1; i++) {
+			splt[i]=path[i];
+			if (path[i]=='/') c++;
+		}
+		if (splt[i-1]=='/') splt[i-1]='\0';
+	}
+	return splt;
+}
+
+int
+count_l(const char *path) {
+	int c=0;
+	for(int i=0; path[i]; i++) {
+		if (path[i]=='/') c++;
+	}
+	return c;
+}
+
 // implementation for: man 2 access
 // Checks if a file exists.
 int
@@ -167,7 +192,10 @@ int
 nufs_mkdir(const char *path, mode_t mode)
 {
     int rv = nufs_mknod(path, mode | 040000, 0);
+    printf("%d\n", count_l(path));
     // TODO: Nested Directories
+    /*for (int i=0; i<count_l(path)) {
+    }*/
     printf("mkdir(%s) -> %d\n", path, rv);
     return rv;
 }
