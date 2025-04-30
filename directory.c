@@ -1,5 +1,6 @@
 #include "inode.h"
 #include "directory.h"
+#include "hash.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -7,6 +8,7 @@
 //int directory_lookup(inode* dd, const char* name) {}
 int tree_lookup(const char* path) {
 	size_t* count = (size_t*)get_root_start();
+	printf("hash: %d\n", hash(path));
 	dirent *ent = (dirent*)get_root_start()+1;
 	for (int i=0; i<*count; i++) {
 		if (!strcmp(ent->name, path)) return ent->inum;

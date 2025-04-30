@@ -25,10 +25,10 @@
 // Checks if a file exists.
 int
 nufs_access(const char *path, int mask)
-{
+{	//if (!strcmp(path, "/")) return rv;
     int rv = 0;
     int l = tree_lookup(path);
-    rv = (l>-1) ? F_OK : ENOENT;
+    rv = (l>-1) ? F_OK : -ENOENT;
     printf("access(%s, %04o) -> %d\n", path, mask, rv);
     return rv;
 }
@@ -39,7 +39,7 @@ int
 nufs_mknod(const char *path, mode_t mode, dev_t rdev)
 {
     int rv = 0;
-    int l = alloc_inode();
+    int l = alloc_inode(path);
     inode *n = get_inode(l);
     size_t* count = (size_t*)get_root_start();
     dirent *nod = (dirent*)get_root_start() + 1;
@@ -119,7 +119,7 @@ nufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
     	rv = nufs_getattr(ent->name, &st);
     	assert(rv == 0);
     	if (strcmp(ent->name, "/")==0) filler(buf, ".", &st, 0);
-    	else if (ent->active=true) {
+    	else if (ent->active==true) {
     		char name[DIR_NAME];
 		int i;
 		for(i=1; i<DIR_NAME && ent->name[i]; i++) name[i-1] = ent->name[i];
@@ -149,16 +149,18 @@ nufs_unlink(const char *path)
 {
     int rv = -1;
     int l = tree_lookup(path);
-    if (l<0) return ENOENT;
+    if (l<0) return -ENOENT;
     size_t* count = (size_t*)get_root_start();
     dirent *ent = (dirent*)get_root_start()+1;
     void* bm = get_inode_bitmap();
     for (int i=0; i<*count; i++) {
     	rv = nufs_getattr(ent->name, 0);
     	assert(rv == 0);
-    	if (strcmp(ent->name, path)==0) {
+    	if (!strcmp(ent->name, path)) {
     		ent->active=false;
     		bitmap_put(bm, l, 0);
+    		printf("found file!\n");
+    		return rv;
     	}
 	*ent++;
     }
@@ -235,7 +237,7 @@ nufs_open(const char *path, struct fuse_file_info *fi)
 {
     int rv = 0;
     int k = nufs_access(path, 0);
-    if (k==ENOENT) k = nufs_create(path, 0100644, 0);
+    if (k==-ENOENT) k = nufs_create(path, 0100644, 0);
     printf("open(%s) -> %d\n", path, rv);
     return rv;
 }
@@ -315,25 +317,6 @@ nufs_init_ops(struct fuse_operations* ops)
 };
 
 struct fuse_operations nufs_ops;
-
-void
-mkfs() {
-	pages_init("data.nufs");
-	size_t *p = (size_t*)get_root_start();
-	*p = 1;
-	dirent *root = (dirent*)get_root_start() + 1;
-	strcpy(root->name, "/");
-	void *blk = get_root_start();	// Root directory starts at the beginning of data segment...
-	int t = alloc_inode();
-	inode* ptr = get_inode(t);
-	ptr->mode=040755;
-	ptr->ptrs[0] = 0;	// What if instead we tracked pointers relative to the start of data, so as to account for different memory mappings?
-	root->inum = t;
-	root->type = DIRECTORY;
-	root->active = true;
-	root->next=NULL;
-	pages_free();
-}
 
 int
 main(int argc, char *argv[])
