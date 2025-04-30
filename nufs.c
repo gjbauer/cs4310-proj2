@@ -21,6 +21,8 @@
 #include "bitmap.h"
 #include "nufs.h"
 
+dirent nul;
+
 // implementation for: man 2 access
 // Checks if a file exists.
 int
@@ -152,14 +154,14 @@ nufs_unlink(const char *path)
     if (l<0) return -ENOENT;
     size_t* count = (size_t*)get_root_start();
     dirent *ent = (dirent*)get_root_start()+1;
+    nul.active=false;
     void* bm = get_inode_bitmap();
     for (int i=0; i<*count; i++) {
     	rv = nufs_getattr(ent->name, 0);
     	assert(rv == 0);
     	if (!strcmp(ent->name, path)) {
-    		ent->active=false;
     		bitmap_put(bm, l, 0);
-    		printf("found file!\n");
+    		memcpy(ent, &nul, sizeof(nul));
     		return rv;
     	}
 	*ent++;
@@ -199,14 +201,20 @@ nufs_rmdir(const char *path)
 // called to move a file within the same filesystem
 int
 nufs_rename(const char *from, const char *to) {
-    int rv = 0;
-    size_t* count = (size_t*)get_root_start();
-    dirent *ent = (dirent*)get_root_start()+1;
-    for (int i=0; i<*count; i++) {
-    	if (strcmp(ent->name, from)==0) {
-    		strcpy(ent->name, to);
-    	}
-	*ent++;
+    int l = tree_lookup(from);
+    int rv;
+    nul.active=false;
+    if (!(rv = (l>0) ? 0 : -ENOENT)) {
+        size_t* count = (size_t*)get_root_start();
+        dirent *f = (dirent*)get_root_start() + 1;
+        dirent *t = (dirent*)get_root_start() + 1;
+        for (int i=0; i<*count && strcmp(f->name, from); i++, *f++);
+        for (int i=0; i<*count && strcmp(t->name, to); i++, *t++);
+        strcpy(t->name, to);
+        t->inum = l;
+        t->active=true;
+        *count = *count + 1;
+        memcpy(f, &nul, sizeof(nul));
     }
     printf("rename(%s => %s) -> %d\n", from, to, rv);
     return rv;
@@ -259,6 +267,7 @@ nufs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_fi
 int
 nufs_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi)
 {
+    // TODO: Implement more complete write logic...
     int rv = 0;
     int l = tree_lookup(path);
     inode* n = get_inode(l);
