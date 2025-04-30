@@ -51,7 +51,7 @@ nufs_mknod(const char *path, mode_t mode, dev_t rdev)
     nod->active=true;
     *count = *count + 1;
     n->mode = mode;
-    /*
+/*
     int rv = 0;
     int count = 0;
     int l = alloc_inode(path);
@@ -111,7 +111,6 @@ nufs_getattr(const char *path, struct stat *st)
 {
     int rv = 0;
     int l = tree_lookup(path);
-    printf("%s\n", split(path, 0));
     inode *n;
     if (l>-1) {
     	if (st) {
@@ -141,28 +140,6 @@ nufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 {
     struct stat st;
     int rv;
-    
-        /*
-    int rv = 0;
-    int count = 0;
-    int l = alloc_inode(path);
-    inode *n = get_inode(0);
-    dirent *p;
-loop:
-	p = n->ptrs[0];
-	if (!strcmp(p->name, "")) {
-		memcpy(p, &data, sizeof(data));
-		break;
-	} else {
-		p = n->ptrs[1];
-	} if (!strcmp(p->name, "")) {
-		memcpy(p, &data, sizeof(data));
-		break;
-	} else {
-		n = get_inode(n->iptr);
-		goto loop;
-	}
-    */
     
     size_t* count = (size_t*)get_root_start();
     dirent *ent = (dirent*)get_root_start()+1;
@@ -223,7 +200,7 @@ int
 nufs_link(const char *from, const char *to)
 {
     int rv = 0;
-    /*int l = tree_lookup(from);
+    int l = tree_lookup(from);
     inode *n = get_inode(l);
     size_t* count = (size_t*)get_root_start();
     dirent *nod = (dirent*)get_root_start() + 1;
@@ -232,7 +209,7 @@ nufs_link(const char *from, const char *to)
     nod->inum = l;
     nod->active=true;
     *count = *count + 1;
-    n->mode = 0100644;*/
+    n->mode = 0100644;
     printf("link(%s => %s) -> %d\n", from, to, rv);
 	return rv;
 }

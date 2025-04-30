@@ -16,6 +16,10 @@ int
 alloc_inode(const char *path) {
 	char *hpath;
 	void* ibm = get_inode_bitmap();
+    if (!strcmp(path, "/")) {
+        bitmap_put(ibm, 0, 1);
+        return 0;
+    }
 	if (bitmap_get(ibm, hash(path))) {
 		return alloc_inode(extend(path));
 	} else {

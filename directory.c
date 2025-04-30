@@ -7,6 +7,7 @@
 //void directory_init() {}
 //int directory_lookup(inode* dd, const char* name) {}
 int tree_lookup(const char* path) {
+    if (!strcmp(path, "/")) return 0;
 	size_t* count = (size_t*)get_root_start();
 	printf("hash: %d\n", hash(path));
 	dirent *ent = (dirent*)get_root_start()+1;

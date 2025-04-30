@@ -20,12 +20,12 @@ typedef struct dirent {
     bool active;
     struct dirent *parent;
     struct dirent *next;
+    //char _reserved[11];
 } dirent;
 
 //void directory_init();
 //int directory_lookup(inode* dd, const char* name);
 int tree_lookup(const char* path);
-char *split(const char *path, int n)
 //int directory_put(inode* dd, const char* name, int inum);
 //int directory_delete(inode* dd, const char* name);
 //slist* directory_list(const char* path);
