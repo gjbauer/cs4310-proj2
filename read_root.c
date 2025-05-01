@@ -31,7 +31,7 @@ mknod(const char *path)
 {
     int rv = 0;
     int count = 0;
-    int l = alloc_inode(path);
+    int l = inode_find(path);
     inode *n = get_inode(0);
     inode *h = get_inode(l);
     dirent *p0, *p1;
