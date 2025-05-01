@@ -3,7 +3,7 @@ SRCS := $(wildcard *.c)
 OBJS := $(SRCS:.c=.o)
 HDRS := $(wildcard *.h)
 
-CFLAGS := -g `pkg-config fuse --cflags`
+CFLAGS := -g `pkg-config fuse --cflags`  -fno-stack-protector
 LDLIBS := `pkg-config fuse --libs`
 
 nufs: $(OBJS)
@@ -35,6 +35,9 @@ test: nufs
 gdb: nufs
 	mkdir -p mnt || true
 	gdb --args ./nufs -s -f mnt data.nufs
+
+open:
+	gedit *.c *.h
 
 .PHONY: clean mount unmount gdb
 
