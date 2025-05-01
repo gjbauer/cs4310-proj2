@@ -11,12 +11,12 @@
 int mkstop() {
     int rv = 0;
     int count = 0;
-    int l = alloc_inode("*");
+    //int l = alloc_inode("*");	// Why waste an inode?
     inode *n = get_inode(0);
     inode *h = get_inode(1);
     dirent *p;
     dirent data;
-    data.inum=l;
+    data.inum=0;
     strcpy(data.name, "*");
     n->mode=0;
     data.active=true;
