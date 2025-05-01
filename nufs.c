@@ -325,8 +325,8 @@ read_loop:
     		data0 = ((char*)get_root_start()+n->ptrs[0]);
     	}
     	data1 = ((char*)get_root_start()+n->ptrs[1]);
-    	strncpy(buf, data0, n->size[0]-1);
-    	strncpy(buf, data1, n->size[1]);
+    	strncpy(buf, data0, n->size[0]);
+    	strncat(buf, data1, n->size[1]);
     	if (i < size) {
     		n = get_inode(n->iptr);
     		goto read_loop;

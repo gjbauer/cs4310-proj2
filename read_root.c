@@ -150,7 +150,7 @@ read_loop:
     	//printf("ptrs[0] = %d\n", n->ptrs[0]);
     	strncpy(buf, data0, n->size[0]-1);
     	//for(; p1<n->size[1] && i < size-1; p1++, i++);
-    	strncpy(buf, data1, n->size[1]);
+    	strncat(buf, data1, n->size[1]);
     	/*if (i < size-1) {
     		n = get_inode(n->iptr);
     		goto read_loop;
