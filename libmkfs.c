@@ -49,14 +49,14 @@ mkfs() {
 	inode* ptr = get_inode(0);
 	ptr->mode=040755;
 	ptr->ptrs[0] = sizeof(root);	// What if instead we tracked pointers relative to the start of data, so as to account for different memory mappings?
-	ptr->ptrs[1] = 0;
+	ptr->ptrs[1] = sizeof(root);
 	root->inum = 0;
 	root->type = DIRECTORY;
 	root->active = true;
 	root->next=NULL;
 	ptr = get_inode(1);
 	ptr->ptrs[0] = sizeof(root);	// What if instead we tracked pointers relative to the start of data, so as to account for different memory mappings?
-	ptr->ptrs[1] = 0;	// We can set this when we unlink/remove a file
+	ptr->ptrs[1] = sizeof(root);	// We can set this when we unlink/remove a file
 	mkstop();
 	pages_free();
 }

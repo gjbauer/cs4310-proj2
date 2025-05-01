@@ -34,9 +34,9 @@ alloc_inode(const char *path) {
         return 0;
     }
 	if (bitmap_get(ibm, hash(path))==1) {
-		printf("bitmap : %d\n", bitmap_get(ibm, hash(path)));
+		//printf("bitmap : %d\n", bitmap_get(ibm, hash(path)));
 		hpath = extend(path);
-		printf("extend : %s\n", hpath);
+		//printf("extend : %s\n", hpath);
 		strcpy(tpath, hpath);
 		free(hpath);
 		//return alloc_inode(tpath);

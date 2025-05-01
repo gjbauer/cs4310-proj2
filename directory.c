@@ -3,19 +3,30 @@
 #include "hash.h"
 #include <string.h>
 #include <stdlib.h>
+#include <errno.h>
 
 //void directory_init() {}
 //int directory_lookup(inode* dd, const char* name) {}
 int tree_lookup(const char* path) {
-    if (!strcmp(path, "/")) return 0;
-	size_t* count = (size_t*)get_root_start();
-	printf("hash: %d\n", hash(path));
-	dirent *ent = (dirent*)get_root_start()+1;
-	for (int i=0; i<*count; i++) {
-		if (!strcmp(ent->name, path)) return ent->inum;
-		*ent++;
+	if (!strcmp(path, "/")) return 0;
+	inode *n = get_inode(0);
+	dirent *p0, *p1;
+lookup_loop:
+	p0 = (dirent*)((char*)get_root_start()+n->ptrs[0]);
+	p1 = (dirent*)((char*)get_root_start()+n->ptrs[1]);
+	if (!strcmp(p0->name, path)) {
+		return p0->inum;
+	} else if (!strcmp(p0->name, "*")) {
+		return -ENOENT;
+	} else if (!strcmp(p1->name, path)) {
+		return p1->inum;
+	} else if (!strcmp(p1->name, "*")) {
+		return -ENOENT;
+	} else {
+		n = get_inode(n->iptr);
+		goto lookup_loop;
 	}
-	return -1;
+	return -ENOENT;
 }
 int directory_put(inode* dd, const char* name, int inum) {
 	dirent* d = malloc(sizeof(dirent*));

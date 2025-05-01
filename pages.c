@@ -38,6 +38,10 @@ pages_init(const char* path)
 
     void* pbm = get_pages_bitmap();
     for (int i=0; i<=9; i++) alloc_page();
+    void* ibm = get_inode_bitmap();
+    for (int i=0; i<=512; i++) bitmap_put(ibm, i, 0);
+    ibm = get_inode_start();
+    memset(ibm, 0, 3*4096);
 }
 
 void

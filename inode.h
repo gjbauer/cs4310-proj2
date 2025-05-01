@@ -3,12 +3,14 @@
 #ifndef INODE_H
 #define INODE_H
 
+#include <stdint.h>
+
 #include "pages.h"
 
 typedef struct inode {
     int refs; // reference count
     int mode; // permission & type
-    int size; // bytes
+    int16_t size[2]; // bytes
     int ptrs[2]; // direct pointers
     int iptr; // single indirect pointer
 } inode;

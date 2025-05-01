@@ -80,37 +80,33 @@ nufs_mknod(const char *path, mode_t mode, dev_t rdev)
     int rv = 0;
     int count = 0;
     int l = inode_find(path);
-    inode *n = get_inode(0);
+    inode *n = get_inode(1);
+    inode *r = get_inode(0);	// TODO: Get this to point to sub-directories...have to reimplement directories...
     inode *h = get_inode(l);
-    dirent *p0, *p1;
+    dirent *p0, *p1, *w;
     dirent data;
     data.inum=l;
     strcpy(data.name, path);
-    n->mode=mode;
+    //n->mode=mode;
     data.active=true;
 mk_loop:
-	p0 = (dirent*)((char*)get_root_start()+n->ptrs[0]);
-	p1 = (dirent*)((char*)get_root_start()+n->ptrs[1]);
-	if (!strcmp(p0->name, "")) {
+	p0 = (dirent*)((char*)get_root_start()+r->ptrs[0]);
+	p1 = (dirent*)((char*)get_root_start()+r->ptrs[1]);
+	w = (dirent*)((char*)get_root_start()+n->ptrs[0]);
+	if (!strcmp(p0->name, "*")) {
 		memcpy(p0, &data, sizeof(data));
-		h->ptrs[0] = n->ptrs[0];
-	} else if (!strcmp(p0->name, "*")) {
-		strcpy(stop.name, "*");
+		r->ptrs[1] = r->ptrs[0];
+		r->ptrs[0] = n->ptrs[0];
+		n->ptrs[0] + sizeof(data);
+		memcpy(w, &stop, sizeof(stop));	
+	} else if (!strcmp(p0->name, "")) {
 		memcpy(p0, &data, sizeof(data));
-		h->ptrs[0] = n->ptrs[0];
-		memcpy(p1, &stop, sizeof(stop));
 	} else if (!strcmp(p1->name, "")) {
 		memcpy(p1, &data, sizeof(data));
-		h->ptrs[1] = n->ptrs[1];
 	} else if (!strcmp(p1->name, "*")) {
-		strcpy(stop.name, "*");
-		memcpy(p0, &data, sizeof(data));
-		h->ptrs[0] = n->ptrs[1];
-		if (n->iptr==0) n->iptr = alloc_inode("");
-		n = get_inode(n->iptr);
-		p0 = (dirent*)((char*)get_root_start()+n->ptrs[0]);
-		//p1 = (dirent*)((char*)get_root_start()+n->ptrs[1]);
-		memcpy(p0, &stop, sizeof(stop));
+		memcpy(w, &data, sizeof(data));
+		n->ptrs[0] += sizeof(data);
+		if (n->iptr==0) n->iptr = inode_find("*");
 	} else {
 		n = get_inode(n->iptr);
 		goto mk_loop;
@@ -125,7 +121,8 @@ nufs_create(const char *path, mode_t mode, struct fuse_file_info *fi) {
     		int l = tree_lookup(path);
     		inode *n = get_inode(l);
         	n->mode = mode; // regular file
-        	n->size = 0;
+        	n->size[0] = 0;
+        	n->size[1] = 0;
         	return l;
 	} else return -1;
 }
@@ -154,7 +151,7 @@ nufs_getattr(const char *path, struct stat *st)
     	if (st) {
     		n = get_inode(l);
         	st->st_mode = n->mode; // regular file
-        	st->st_size = n->size;
+        	st->st_size = n->size[0];	// TODO : This should be a function which calculates size from the inodes..
         	st->st_uid = getuid();
         }
     }
@@ -398,7 +395,7 @@ write_loop:
     }
     rv = i;
     n->ptrs[0]=h->ptrs[0];
-    n->size=size;
+    //n->size=size;
     h->ptrs[0]+=size;
     n->ptrs[1]=h->ptrs[1];
     h->ptrs[1]+=size;
