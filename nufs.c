@@ -66,53 +66,45 @@ nufs_access(const char *path, int mask)
 int
 nufs_mknod(const char *path, mode_t mode, dev_t rdev)
 {
-    /*int rv = 0;
-    int l = alloc_inode(path);
-    inode *n = get_inode(l);
-    size_t* count = (size_t*)get_root_start();
-    dirent *nod = (dirent*)get_root_start() + 1;
-    for (int i=0; i<*count; i++, *nod++);
-    strcpy(nod->name, path);
-    nod->inum = l;
-    nod->active=true;
-    *count = *count + 1;
-    n->mode = mode;*/
-    int rv = 0;
-    int count = 0;
-    int l = inode_find(path);
-    inode *n = get_inode(1);
-    inode *r = get_inode(0);	// TODO: Get this to point to sub-directories...have to reimplement directories...
-    inode *h = get_inode(l);
-    dirent *p0, *p1, *w;
-    dirent data;
-    data.inum=l;
-    strcpy(data.name, path);
-    //n->mode=mode;
-    data.active=true;
+	int rv = 0;
+	int count = 0;
+	int l = inode_find(path);
+	inode *n = get_inode(1);
+	inode *p = get_inode(0);	// TODO: Get this to point to sub-directories...have to reimplement directories... <- parent directory
+	inode *h = get_inode(l);
+	dirent *p0, *p1, *w;
+	dirent data;
+	data.inum=l;
+	strcpy(data.name, path);
+	h->mode=mode;
+	data.active=true;
 mk_loop:
-	p0 = (dirent*)((char*)get_root_start()+r->ptrs[0]);
-	p1 = (dirent*)((char*)get_root_start()+r->ptrs[1]);
+	p0 = (dirent*)((char*)get_root_start()+p->ptrs[0]);
+	p1 = (dirent*)((char*)get_root_start()+p->ptrs[1]);
 	w = (dirent*)((char*)get_root_start()+n->ptrs[0]);
 	if (!strcmp(p0->name, "*")) {
+		//printf("found stop!\n");
+		strcpy(stop.name, "*");
 		memcpy(p0, &data, sizeof(data));
-		r->ptrs[1] = r->ptrs[0];
-		r->ptrs[0] = n->ptrs[0];
-		n->ptrs[0] + sizeof(data);
+		p->ptrs[1] = n->ptrs[0];
+		n->ptrs[0] + sizeof(stop);
 		memcpy(w, &stop, sizeof(stop));	
 	} else if (!strcmp(p0->name, "")) {
 		memcpy(p0, &data, sizeof(data));
 	} else if (!strcmp(p1->name, "")) {
 		memcpy(p1, &data, sizeof(data));
 	} else if (!strcmp(p1->name, "*")) {
-		memcpy(w, &data, sizeof(data));
-		n->ptrs[0] += sizeof(data);
+		memcpy(p1, &data, sizeof(data));
 		if (n->iptr==0) n->iptr = inode_find("*");
+		get_inode(n->iptr)->ptrs[0] = n->ptrs[0];
+		n->ptrs[0] += sizeof(data);
+		memcpy(w, &data, sizeof(data));
 	} else {
 		n = get_inode(n->iptr);
 		goto mk_loop;
 	}
-    printf("mknod(%s, %04o) -> %d\n", path, mode, rv);
-    return rv;
+	printf("mknod(%s, %04o) -> %d\n", path, mode, rv);
+	return rv;
 }
 
 int
@@ -174,33 +166,11 @@ nufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
              off_t offset, struct fuse_file_info *fi)
 {
 	struct stat st;
-    //char name[DIR_NAME];
-    
-    /*inode* n = get_inode(0);
-    dirent *e0 = (dirent*)((char*)get_root_start()+n->ptrs[0]);
-    dirent *e1 = (dirent*)((char*)get_root_start()+n->ptrs[1]);
-    //printf("%d\n", n->ptrs[0]);
-    //printf("%d\n", n->ptrs[1]);
-    while (true) {
-    	if (!strcmp(e0->name, "*")) break;
-    	//strcpy(name, e0->name);
-    	rv = nufs_getattr(e0->name, &st);
-    	assert(rv == 0);
-    	filler(buf, e0->name, &st, 0);
-    	if (!strcmp(e1->name, "*")) break;
-    	//strcpy(name, e1->name);
-    	rv = nufs_getattr(e0->name, &st);
-    	assert(rv == 0);
-    	filler(buf, e1->name, &st, 0);
-    }*/
-    
-        int rv;
+	int rv;
     
 	inode* n = get_inode(0);
 	dirent *e0 = (dirent*)((char*)get_root_start()+n->ptrs[0]);
 	dirent *e1 = (dirent*)((char*)get_root_start()+n->ptrs[1]);
-	printf("%d\n", n->ptrs[0]);
-	printf("%d\n", n->ptrs[1]);
 	while (true) {
 		if (!strcmp(e0->name, "*")) break;
 		rv = nufs_getattr(e0->name, &st);
@@ -214,8 +184,8 @@ nufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		else return 0;
 	}
 
-    printf("readdir(%s) -> %d\n", path, rv);
-    return 0;
+	printf("readdir(%s) -> %d\n", path, rv);
+	return 0;
 }
 
 // most of the following callbacks implement

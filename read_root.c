@@ -30,9 +30,9 @@ mknod(const char *path)
     int rv = 0;
     int count = 0;
     int l = inode_find(path);
-    printf("l = %d\n", l);	// TODO: Fix bug returning 0
+    //printf("l = %d\n", l);
     inode *n = get_inode(1);
-    inode *r = get_inode(0);	// TODO: Get this to point to sub-directories...have to reimplement directories...
+    inode *p = get_inode(0);	// TODO: Get this to point to sub-directories...have to reimplement directories... <- parent directory
     inode *h = get_inode(l);
     dirent *p0, *p1, *w;
     dirent data;
@@ -41,14 +41,14 @@ mknod(const char *path)
     //n->mode=mode;
     data.active=true;
 mk_loop:
-	p0 = (dirent*)((char*)get_root_start()+r->ptrs[0]);
-	p1 = (dirent*)((char*)get_root_start()+r->ptrs[1]);
+	p0 = (dirent*)((char*)get_root_start()+p->ptrs[0]);
+	p1 = (dirent*)((char*)get_root_start()+p->ptrs[1]);
 	w = (dirent*)((char*)get_root_start()+n->ptrs[0]);
 	if (!strcmp(p0->name, "*")) {
-		printf("found stop!\n");
+		//printf("found stop!\n");
 		strcpy(stop.name, "*");
 		memcpy(p0, &data, sizeof(data));
-		r->ptrs[1] = n->ptrs[0];
+		p->ptrs[1] = n->ptrs[0];
 		n->ptrs[0] + sizeof(stop);
 		memcpy(w, &stop, sizeof(stop));	
 	} else if (!strcmp(p0->name, "")) {
