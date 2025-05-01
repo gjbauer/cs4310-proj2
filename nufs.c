@@ -312,27 +312,28 @@ nufs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_fi
 {
     int rv = 4096;
     int l = tree_lookup(path);
+    bool start = true;
+    int p0=0, p1=0, i=0;
+    inode* n = get_inode(l);
+    char *data0, *data1;
     if (l>-1) {
-    	bool start = true;
-    	int p0=0, p1=0, i=0;
-    	inode* n = get_inode(l);
-    	char *data0, *data1;
-	read_loop:
+read_loop:
     	if (start) {
-    		data0 = (void*)(uintptr_t)((char*)get_data_start()+n->ptrs[0]+offset);
+    		data0 = ((char*)get_root_start()+n->ptrs[0]+offset);
     		start = false;
     	} else {
-    		data0 = (void*)(uintptr_t)((char*)get_data_start()+n->ptrs[0]);
+    		data0 = ((char*)get_root_start()+n->ptrs[0]);
     	}
-    	data1 = (void*)(uintptr_t)((char*)get_data_start()+n->ptrs[1]);
-    	for(; data0[p0] && i < size; p0++, i++) buf[i] = data0[p0];
-    	for(; data1[p1] && i < size; p1++, i++) buf[i] = data1[p1];
-    	if (i < size-1) {
+    	data1 = ((char*)get_root_start()+n->ptrs[1]);
+    	strncpy(buf, data0, n->size[0]-1);
+    	strncpy(buf, data1, n->size[1]);
+    	if (i < size) {
     		n = get_inode(n->iptr);
     		goto read_loop;
     	}
     	rv = i;
     }
+    
     printf("read(%s, %ld bytes, @+%ld) -> %d\n", path, size, offset, rv);
     return rv;
 }
@@ -341,35 +342,47 @@ nufs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_fi
 int
 nufs_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi)
 {
-    // TODO: Implement more complete write logic...
+    size+=2;
     int rv = 0;
     int l = tree_lookup(path);
     bool start = true;
-    int p0=0, p1=0, i=0;
+    int p0=1, p1=0, i=0;
     inode* n = get_inode(l);
     inode* h = get_inode(1);
     char *data0, *data1;
+    int i0, i1;
 write_loop:
     if (start) {
-    	data0 = (void*)(uintptr_t)((char*)get_data_start()+n->ptrs[0]+offset);
+    	data0 = ((char*)get_root_start()+h->ptrs[0]+offset);
     	start = false;
     } else {
-    	data0 = (void*)(uintptr_t)((char*)get_data_start()+n->ptrs[0]);
+    	data0 = ((char*)get_root_start()+h->ptrs[0]);
     }
-    data1 = (void*)(uintptr_t)((char*)get_data_start()+n->ptrs[1]);
-    for(; data0[p0]==0 && i < size; p0++, i++) data0[p0] = buf[i];
-    for(; data1[p1]==0 && i < size; p1++, i++) data1[p1] = buf[i];
-    if (i < size-1) {
-    	n = get_inode(n->iptr);
-    	goto write_loop;
+    if (offset > n->size[0]) {
+    	offset -= n->size[0];
+    	data1 = ((char*)get_root_start()+h->ptrs[1]+offset);
+    	for(; i < size; p0++, i++) data0[p0] = buf[i];
+    	n->size[0]=p0;
+    	n->ptrs[0] = h->ptrs[0];
+    	h->ptrs[0] += size;
+    } else {
+    	data1 = ((char*)get_root_start()+h->ptrs[1]);
+    	//data0[0]='\0';	//TODO : Worry about write collision later...
+    	if (n->size[0] > 0) {
+    		strncpy(data0, buf, n->size[0]);
+    		strncpy(data1 + (int)n->size, buf+n->size[0], n->size[1]);
+    		n->size[1]=p1;
+    		n->ptrs[0] = h->ptrs[0];
+    		h->ptrs[0] += n->size[0];
+    		n->ptrs[1] = h->ptrs[1];
+    		h->ptrs[0] += n->size[1];
+    	} else {
+    		strncpy(data0, buf, size);
+    		n->size[0]=size;
+    		n->ptrs[0] = h->ptrs[0];
+    		h->ptrs[0] += size;
+    	}
     }
-    rv = i;
-    n->ptrs[0]=h->ptrs[0];
-    //n->size=size;
-    h->ptrs[0]+=size;
-    n->ptrs[1]=h->ptrs[1];
-    h->ptrs[1]+=size;
-    rv = size;
     printf("write(%s, %ld bytes, @+%ld) -> %d\n", path, size, offset, rv);
     return rv;
 }

@@ -22,7 +22,7 @@ lookup: $(OBJS)
 	gcc $(CFLAGS) -c -o $@ $<
 
 clean: unmount
-	rm -f nufs *.o test.log data.nufs
+	rm -f nufs *.o test.log data.nufs mkfs read_root lookup
 	rmdir mnt || true
 
 mount: nufs

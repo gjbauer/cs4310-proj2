@@ -23,6 +23,7 @@ int mkstop() {
     p = (dirent*)((char*)get_root_start()+n->ptrs[0]);
     memcpy(p, &data, sizeof(data));
     h->ptrs[0]+=sizeof(data);
+    h->ptrs[1]+=sizeof(data);
     printf("mkstop(%s) -> %d\n", "*", rv);
     return rv;
 }
