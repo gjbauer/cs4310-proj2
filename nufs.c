@@ -65,7 +65,7 @@ nufs_access(const char *path, int mask)
 int
 nufs_mknod(const char *path, mode_t mode, dev_t rdev)
 {
-    int rv = 0;
+    /*int rv = 0;
     int l = alloc_inode(path);
     inode *n = get_inode(l);
     size_t* count = (size_t*)get_root_start();
@@ -75,33 +75,30 @@ nufs_mknod(const char *path, mode_t mode, dev_t rdev)
     nod->inum = l;
     nod->active=true;
     *count = *count + 1;
-    n->mode = mode;
-/*
+    n->mode = mode;*/
     int rv = 0;
     int count = 0;
     int l = alloc_inode(path);
-    inode *n = get_inode(0);
-    dirent *p;
+    inode *n = get_inode(1);
+    dirent *p0, *p1;
     dirent data;
     data.inum=l;
     strcpy(data.name, path);
-    data.mode=mode;
+    n->mode=mode;
     data.active=true;
-loop:
-	p = n->ptrs[0];
-	if (!strcmp(p->name, "")) {
-		memcpy(p, &data, sizeof(data));
-		break;
-	} else {
-		p = n->ptrs[1];
-	} if (!strcmp(p->name, "")) {
-		memcpy(p, &data, sizeof(data));
-		break;
+mk_loop:
+	p0 = (dirent*)((char*)get_root_start()+n->ptrs[0]);
+	p1 = (dirent*)((char*)get_root_start()+n->ptrs[1]);
+	if (!strcmp(p0->name, "")) {
+		memcpy(p0, &data, sizeof(data));
+		n->ptrs[0]+=sizeof(data);
+	} else if (!strcmp(p1->name, "")) {
+		memcpy(p1, &data, sizeof(data));
+		n->ptrs[1]+=sizeof(data);
 	} else {
 		n = get_inode(n->iptr);
-		goto loop;
+		goto mk_loop;
 	}
-    */
     printf("mknod(%s, %04o) -> %d\n", path, mode, rv);
     return rv;
 }
@@ -166,7 +163,9 @@ nufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
     struct stat st;
     int rv;
     
-    size_t* count = (size_t*)get_root_start();
+    dirent *e0 = (dirent*)get_root_start();
+    dirent *e1;
+    /*size_t* count = (size_t*)get_root_start();
     dirent *ent = (dirent*)get_root_start()+1;
     for (int i=0; i<*count; i++) {
     	rv = nufs_getattr(ent->name, &st);
@@ -180,7 +179,7 @@ nufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
     		filler(buf, name, &st, 0);
     	}
 	*ent++;
-    }
+    }*/
 
     printf("readdir(%s) -> %d\n", path, rv);
     return 0;
@@ -206,7 +205,7 @@ nufs_unlink(const char *path)
     int rv = -1;
     int l = tree_lookup(path);
     if (l<0) return -ENOENT;
-    size_t* count = (size_t*)get_root_start();
+    /*size_t* count = (size_t*)get_root_start();
     dirent *ent = (dirent*)get_root_start()+1;
     nul.active=false;
     void* bm = get_inode_bitmap();
@@ -219,7 +218,7 @@ nufs_unlink(const char *path)
     		return rv;
     	}
 	*ent++;
-    }
+    }*/
     printf("unlink(%s) -> %d\n", path, rv);
     return rv;
 }
@@ -228,7 +227,7 @@ int
 nufs_link(const char *from, const char *to)
 {
     int rv = 0;
-    int l = tree_lookup(from);
+    /*int l = tree_lookup(from);
     inode *n = get_inode(l);
     size_t* count = (size_t*)get_root_start();
     dirent *nod = (dirent*)get_root_start() + 1;
@@ -237,7 +236,7 @@ nufs_link(const char *from, const char *to)
     nod->inum = l;
     nod->active=true;
     *count = *count + 1;
-    n->mode = 0100644;
+    n->mode = 0100644;*/
     printf("link(%s => %s) -> %d\n", from, to, rv);
 	return rv;
 }
@@ -310,9 +309,27 @@ nufs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_fi
 {
     int rv = 4096;
     int l = tree_lookup(path);
-    inode* n = get_inode(l);
-    void *data = (void*)(uintptr_t)((char*)get_data_start()+n->ptrs[0]+offset);
-    memcpy(buf, data, size);
+    if (l>-1) {
+    	bool start = true;
+    	int p0=0, p1=0, i=0;
+    	inode* n = get_inode(l);
+    	char *data0, *data1;
+	read_loop:
+    	if (start) {
+    		data0 = (void*)(uintptr_t)((char*)get_data_start()+n->ptrs[0]+offset);
+    		start = false;
+    	} else {
+    		data0 = (void*)(uintptr_t)((char*)get_data_start()+n->ptrs[0]);
+    	}
+    	data1 = (void*)(uintptr_t)((char*)get_data_start()+n->ptrs[1]);
+    	for(; data0[p0] && i < size; p0++, i++) buf[i] = data0[p0];
+    	for(; data1[p1] && i < size; p1++, i++) buf[i] = data1[p1];
+    	if (i < size-1) {
+    		n = get_inode(n->iptr);
+    		goto read_loop;
+    	}
+    	rv = i;
+    }
     printf("read(%s, %ld bytes, @+%ld) -> %d\n", path, size, offset, rv);
     return rv;
 }
@@ -324,13 +341,31 @@ nufs_write(const char *path, const char *buf, size_t size, off_t offset, struct 
     // TODO: Implement more complete write logic...
     int rv = 0;
     int l = tree_lookup(path);
+    bool start = true;
+    int p0=0, p1=0, i=0;
     inode* n = get_inode(l);
-    inode* h = get_inode(0);
-    void *b = (void*)(uintptr_t)((char*)get_data_start() + h->ptrs[0]);
-    memcpy(b, buf, size);
+    inode* h = get_inode(1);
+    char *data0, *data1;
+write_loop:
+    if (start) {
+    	data0 = (void*)(uintptr_t)((char*)get_data_start()+n->ptrs[0]+offset);
+    	start = false;
+    } else {
+    	data0 = (void*)(uintptr_t)((char*)get_data_start()+n->ptrs[0]);
+    }
+    data1 = (void*)(uintptr_t)((char*)get_data_start()+n->ptrs[1]);
+    for(; data0[p0]==0 && i < size; p0++, i++) data0[p0] = buf[i];
+    for(; data1[p1]==0 && i < size; p1++, i++) data1[p1] = buf[i];
+    if (i < size-1) {
+    	n = get_inode(n->iptr);
+    	goto write_loop;
+    }
+    rv = i;
     n->ptrs[0]=h->ptrs[0];
     n->size=size;
     h->ptrs[0]+=size;
+    n->ptrs[1]=h->ptrs[1];
+    h->ptrs[1]+=size;
     rv = size;
     printf("write(%s, %ld bytes, @+%ld) -> %d\n", path, size, offset, rv);
     return rv;
