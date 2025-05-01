@@ -30,6 +30,7 @@ mknod(const char *path)
     int rv = 0;
     int count = 0;
     int l = inode_find(path);
+    printf("l = %d\n", l);	// TODO: Fix bug returning 0
     inode *n = get_inode(1);
     inode *r = get_inode(0);	// TODO: Get this to point to sub-directories...have to reimplement directories...
     inode *h = get_inode(l);
@@ -44,9 +45,10 @@ mk_loop:
 	p1 = (dirent*)((char*)get_root_start()+r->ptrs[1]);
 	w = (dirent*)((char*)get_root_start()+n->ptrs[0]);
 	if (!strcmp(p0->name, "*")) {
+		printf("found stop!\n");
+		strcpy(stop.name, "*");
 		memcpy(p0, &data, sizeof(data));
-		r->ptrs[1] = r->ptrs[0];
-		r->ptrs[0] = n->ptrs[0];
+		r->ptrs[1] = n->ptrs[0];
 		n->ptrs[0] + sizeof(stop);
 		memcpy(w, &stop, sizeof(stop));	
 	} else if (!strcmp(p0->name, "")) {
