@@ -5,6 +5,25 @@
 #include "bitmap.h"
 #include "directory.h"
 
+int readdir()
+{
+    int rv;
+    //char name[DIR_NAME];
+    
+    inode* n = get_inode(0);
+    dirent *e0 = (dirent*)((char*)get_root_start()+n->ptrs[0]);
+    dirent *e1 = (dirent*)((char*)get_root_start()+n->ptrs[1]);
+    printf("%d\n", n->ptrs[0]);
+    printf("%d\n", n->ptrs[1]);
+    while (true) {
+    	if (!strcmp(e0->name, "*")) break;
+    	rv = printf("%s\n", e0->name);
+    	if (!strcmp(e1->name, "*")) break;
+    	rv = printf("%s\n", e0->name);
+    	n = get_inode(n->iptr);
+    }
+}
+
 // Actually read data
 int
 read(const char *path, char *buf, size_t size)
@@ -39,17 +58,7 @@ int
 main(int argc, char *argv[])
 {
 	storage_init("data.nufs");
-	dirent *root = (dirent*)get_root_start()+1;	// Root directory starts at the beginning of data segment...
-	size_t* count = (size_t*)get_root_start();
-	int i=0;
-	while (i<*count) {
-		//printf("%s\n", root->name);
-		//printf("%d\n", root->inum);
-		*root++, i++;
-	}
-	char buff[256];
-	//write("/hello.txt", "hello\n", 6);
-	read("/hello.txt", buff, 6);
-	printf("%s\n", buff);
+	//dirent *root = (dirent*)get_root_start();	// Root directory starts at the beginning of data segment...
+	readdir();
 	pages_free();
 }
