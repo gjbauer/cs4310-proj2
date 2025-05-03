@@ -155,13 +155,15 @@ write_mp(char *data0, char *data1, int inode, const char *buf, size_t size)
 	memcpy(&n, get_inode(inode), sizeof(n));
 	struct inode h; // *get_inode(1);
 	memcpy(&h, get_inode(1), sizeof(n));
-	memcpy(data0, buf, n->size[0]);
-	memcpy(data1 + (int)n->size[0], buf+n->size[0], n->size[1]);
-	data1[n->size[0] + n->size[1]] = '\0';
+	memcpy(data0, buf, n.size[0]);
+	memcpy(data1 + (int)n.size[0], buf+n.size[0], n.size[1]);
+	data1[n.size[0] + n.size[1]] = '\0';
 	//n->size[1]=;//TODO : second inode size
-	h->ptrs[0] += n->size[0];
-	n->ptrs[1] = h->ptrs[1];
-	h->ptrs[1] += n->size[1];
+	h.ptrs[0] += n.size[0];
+	n.ptrs[1] = h.ptrs[1];
+	h.ptrs[1] += n.size[1];
+	memcpy(get_inode(inode), &n, sizeof(n));
+	memcpy(get_inode(1), &h, sizeof(h));
 }
 
 // Actually write data
@@ -176,15 +178,17 @@ write(const char *path, const char *buf, size_t size, off_t offset)
 	inode* h = get_inode(1);
 	char *data0, *data1;
 	
-	if (start) data0 = ((char*)get_root_start()+h->ptrs[0]+offset), data1 = (offset >= n->size[0]) ? ((char*)get_root_start()+h->ptrs[1] + (offset - n->size[0])) : ((char*)get_root_start()+h->ptrs[1]), start = false;
-	else data0 = ((char*)get_root_start()+h->ptrs[0]), data1 = ((char*)get_root_start()+h->ptrs[1]);
+	data0 = ((char*)get_root_start()+h->ptrs[0]+offset), data1 = (offset >= n->size[0]) ? ((char*)get_root_start()+h->ptrs[1] + (offset - n->size[0])) : ((char*)get_root_start()+h->ptrs[1]), start = false; // How about just call write again if our write isn't finished? No loops...
 	
-	if (offset > n->size[0]) {
+	if (offset >= n->size[0] && offset != 0) {
+		printf("write_sp(data1)\n");
 		write_sp(data1, l, buf, size);
 	} else {
 		if (n->size[0] > 0) {
-			write_mp(data0, data1, buf, size);
+			printf("write_mp()\n");
+			write_mp(data0, data1, l, buf, size);
 		} else {
+			printf("write_sp(data0)\n");
 			write_sp(data0, l, buf, size);
 		}
 	}
