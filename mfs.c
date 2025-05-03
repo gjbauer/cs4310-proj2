@@ -167,8 +167,7 @@ write(const char *path, const char *buf, size_t size, off_t offset)
 		data1 = (offset >= n->size[0]) ? ((char*)get_root_start()+h->ptrs[1] + (offset - n->size[0])) : ((char*)get_root_start()+h->ptrs[1]);
 		start = false;
 	} else {
-		data0 = ((char*)get_root_start()+h->ptrs[0]);
-		data1 = ((char*)get_root_start()+h->ptrs[1]);
+		data0 = ((char*)get_root_start()+h->ptrs[0]), data1 = ((char*)get_root_start()+h->ptrs[1]);
 	}
 	
 	if (offset > n->size[0]) {
