@@ -89,6 +89,7 @@ _mknod(const char *path, int mode, int k)
 	printf("find_parent(path) = %d\n", find_parent(path));
 	inode *p = get_inode(k);	// <- parent directory
 	inode *h = get_inode(l);
+	h->refs=1;
 	dirent *p0, *p1, *w;
 	dirent data;
 	data.inum=l;
@@ -104,7 +105,8 @@ _mknod(const char *path, int mode, int k)
 		memcpy(p0, &data, sizeof(data));
 		p->ptrs[1] = n->ptrs[0];
 		memcpy(w, &stop, sizeof(stop));
-		n->ptrs[0] += sizeof(stop);	
+		n->ptrs[0] += sizeof(stop);
+		n->ptrs[1] += sizeof(stop);	
 	} /*else if (p0->active==false) {
 		printf("p0: found empty!\n");
 		memcpy(p0, &data, sizeof(data));
@@ -117,6 +119,7 @@ _mknod(const char *path, int mode, int k)
 		p->iptr = inode_find("*");
 		get_inode(p->iptr)->ptrs[0] = n->ptrs[0];
 		n->ptrs[0] += sizeof(data);
+		n->ptrs[1] += sizeof(data);
 		memcpy(w, &stop, sizeof(stop));
 	} else {
 		printf("found none, getting next inode!\n");
@@ -204,27 +207,30 @@ nufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	int l = find_parent(path);
 	l = tree_lookup(path, l);
 	
+	dirent e;
+	nufs_read(path, (char*)&e, sizeof(e), 0, 0);
+	
 	inode* n = get_inode(l);
-	dirent *e0;
-	dirent *e1;
 	
 	while (true) {
-		e0 = (dirent*)((char*)get_root_start()+n->ptrs[0]);
-		e1 = (dirent*)((char*)get_root_start()+n->ptrs[1]);
+		//e0 = (dirent*)((char*)get_root_start()+n->ptrs[0]);
+		//e1 = (dirent*)((char*)get_root_start()+n->ptrs[1]);
+		nufs_read(path, (char*)&e, sizeof(e), 0, 0);
+		printf("%s\n", e.name);	// getaddr
+		if (!strcmp(e.name, "*")) break;
 		//printf("%s\n", e0->name);	// getaddr
-		if (!strcmp(e0->name, "*")) break;
-		//printf("%s\n", e0->name);	// getaddr
-		rv = nufs_getattr(e0->name, &st);
+		rv = nufs_getattr(e.name, &st);
 		assert(rv == 0);
-		filler(buf, e0->name, &st, 0);
+		filler(buf, e.name, &st, 0);
+		printf("%s\n", e.name);
+		nufs_read(path, (char*)&e, sizeof(e), sizeof(e), 0);
+		if (!strcmp(e.name, "*")) break;
 		//printf("%s\n", e1->name);
-		if (!strcmp(e1->name, "*")) break;
-		//printf("%s\n", e1->name);
-		rv = nufs_getattr(e1->name, &st);
+		rv = nufs_getattr(e.name, &st);
 		assert(rv == 0);
-		filler(buf, e1->name, &st, 0);
+		filler(buf, e.name, &st, 0);
 		printf("readdir: getting next inode!\n");
-		n = get_inode(n->iptr);
+		//n = get_inode(n->iptr);
 	}
 
 	printf("readdir(%s) -> %d\n", path, rv);
