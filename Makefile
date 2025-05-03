@@ -7,19 +7,19 @@ CFLAGS := -g `pkg-config fuse --cflags`  -fno-stack-protector
 LDLIBS := `pkg-config fuse --libs`
 
 nufs: $(OBJS)
-	gcc $(CLFAGS) -o $@ nufs.o pages.o bitmap.o inode.o directory.o hash.o libmkfs.o $(LDLIBS)
+	clang $(CLFAGS) -o $@ nufs.o pages.o bitmap.o inode.o directory.o hash.o libmkfs.o $(LDLIBS)
 
 mkfs: $(OBJS)
-	gcc $(CLFAGS) -o mkfs mkfs.o mfs.o pages.o bitmap.o inode.o directory.o hash.o libmkfs.o $(LDLIBS)
+	clang $(CLFAGS) -o mkfs mkfs.o mfs.o pages.o bitmap.o inode.o directory.o hash.o libmkfs.o $(LDLIBS)
 	
 read_root: $(OBJS)
-	gcc $(CLFAGS) -o read_root read_root.o mfs.o pages.o directory.o bitmap.o inode.o hash.o libmkfs.o $(LDLIBS)
+	clang $(CLFAGS) -o read_root read_root.o mfs.o pages.o directory.o bitmap.o inode.o hash.o libmkfs.o $(LDLIBS)
 	
 lookup: $(OBJS)
-	gcc $(CLFAGS) -o lookup lookup.o pages.o directory.o bitmap.o inode.o hash.o libmkfs.o $(LDLIBS)
+	clang $(CLFAGS) -o lookup lookup.o pages.o directory.o bitmap.o inode.o hash.o libmkfs.o $(LDLIBS)
 
 %.o: %.c $(HDRS)
-	gcc $(CFLAGS) -c -o $@ $<
+	clang $(CFLAGS) -c -o $@ $<
 
 clean: unmount
 	rm -f nufs *.o test.log data.nufs mkfs read_root lookup
