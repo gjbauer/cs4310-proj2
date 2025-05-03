@@ -175,8 +175,6 @@ write(const char *path, const char *buf, size_t size, off_t offset)
 	inode* n = get_inode(l);
 	inode* h = get_inode(1);
 	char *data0, *data1;
-	//printf("h->ptrs[0] = %d\n", h->ptrs[0]);	// TODO : Move seperately after file unlink
-	//printf("h->ptrs[1] = %d\n", h->ptrs[1]);
 	
 	if (start) data0 = ((char*)get_root_start()+h->ptrs[0]+offset), data1 = (offset >= n->size[0]) ? ((char*)get_root_start()+h->ptrs[1] + (offset - n->size[0])) : ((char*)get_root_start()+h->ptrs[1]), start = false;
 	else data0 = ((char*)get_root_start()+h->ptrs[0]), data1 = ((char*)get_root_start()+h->ptrs[1]);
