@@ -140,14 +140,11 @@ write(const char *path, const char *buf, size_t size, off_t offset)
 	int l = tree_lookup(path, find_parent(path));
 	printf("w: l = %d\n", l);
 	bool start = true;
-	int p0=0, p1=0, i=0;
 	inode* n = get_inode(l);
 	inode* h = get_inode(1);
 	char *data0, *data1;
-	int i0, i1;
 	//printf("h->ptrs[0] = %d\n", h->ptrs[0]);	// TODO : Move seperately after file unlink
 	//printf("h->ptrs[1] = %d\n", h->ptrs[1]);
-	
 	
 	if (start) {
 		data0 = ((char*)get_root_start()+h->ptrs[0]+offset);
@@ -159,13 +156,11 @@ write(const char *path, const char *buf, size_t size, off_t offset)
 	}
 	
 	if (offset > n->size[0]) {
-		offset -= n->size[0];
 		memcpy(data1, buf, size);
 		data1[size] = '\0';
-		n->size[1]=p0;
+		n->size[1]=size;
 		n->ptrs[1] = h->ptrs[0];
-		h->ptrs[0] += size;
-		h->ptrs[1] += size;
+		(h->ptrs[0]==h->ptrs[1]) ? h->ptrs[0] += size, h->ptrs[1] += size : (h->ptrs[0] += size);
 	} else {
 		if (n->size[0] > 0) {
 			memcpy(data0, buf, n->size[0]);
