@@ -5,22 +5,18 @@
 #include <stdlib.h>
 #include <errno.h>
 
-//void directory_init() {}
-//int directory_lookup(inode* dd, const char* name) {}
-int tree_lookup(const char* path) {
-	if (!strcmp(path, "/")) return 0;
-	inode *n = get_inode(0);
+int tree_lookup(const char* subpath, int i) {
+	if (!strcmp(subpath, "/")) return 0;
+	inode *n = get_inode(i);
 	dirent *p0, *p1;
 lookup_loop:
 	p0 = (dirent*)((char*)get_root_start()+n->ptrs[0]);
-	//printf("%s\n", p0->name);
 	p1 = (dirent*)((char*)get_root_start()+n->ptrs[1]);
-	//printf("%s\n", p1->name);
-	if (!strcmp(p0->name, path)) {
+	if (!strcmp(p0->name, subpath)) {
 		return p0->inum;
 	} else if (!strcmp(p0->name, "*")) {
 		return -ENOENT;
-	} else if (!strcmp(p1->name, path)) {
+	} else if (!strcmp(p1->name, subpath)) {
 		return p1->inum;
 	} else if (!strcmp(p1->name, "*")) {
 		return -ENOENT;
@@ -31,7 +27,7 @@ lookup_loop:
 	return -ENOENT;
 }
 int directory_put(inode* dd, const char* name, int inum) {
-	dirent* d = malloc(sizeof(dirent*));
+	/*dirent* d = malloc(sizeof(dirent*));
 	strcpy(d->name, name);
 	d->inum = inum;
 	dirent *ent = (dirent*)get_root_start();
@@ -40,9 +36,7 @@ int directory_put(inode* dd, const char* name, int inum) {
 		else *ent++;
 	}
 	if (!ent) return -1;
-	memcpy(ent, &d, sizeof(d));
+	memcpy(ent, &d, sizeof(d));*/
 	return 0;
 }
-//int directory_delete(inode* dd, const char* name) {}
-//slist* directory_list(const char* path) {}
-//void print_directory(inode* dd) {}
+

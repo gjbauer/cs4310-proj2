@@ -18,7 +18,7 @@ inode_find(const char *path) {
 	int* ptr = (int*)get_inode_bitmap();
 	for (int i=2; i<512; i++) {
 		if (*ptr==0) {
-			if (get_inode(i)->size[0]>0) return i;
+			if (get_inode(i)->size[0]>0&&get_inode(i)->refs==0) return i;
 		}
 	}
 	return alloc_inode(path);
@@ -29,7 +29,7 @@ alloc_inode(const char *path) {
 	char *hpath;
 	char tpath[DIR_NAME];
 	void* ibm = get_inode_bitmap();
-	if (strcmp(path, "/")==0) {
+	if (!strcmp(path, "/")) {
 		bitmap_put(ibm, 0, 1);
 		return 0;
 	}

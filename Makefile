@@ -43,4 +43,3 @@ open:
 	gedit *.c *.h
 
 .PHONY: clean mount unmount gdb
-

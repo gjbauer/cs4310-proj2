@@ -16,7 +16,7 @@
 #include "pages.h"
 #include "util.h"
 #include "bitmap.h"
-#include "nufs.h"
+#include "mkfs.h"
 
 const int PAGE_COUNT = 512;
 const int NUFS_SIZE  = 4096 * 512; // 2MB
