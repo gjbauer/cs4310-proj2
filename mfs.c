@@ -148,6 +148,22 @@ write_sp(char *data, int inode, const char *buf, size_t size)
 	memcpy(get_inode(1), &h, sizeof(h));
 }
 
+int
+write_mp(char *data0, char *data1, int inode, const char *buf, size_t size)
+{
+	struct inode n; // *get_inode(inode);
+	memcpy(&n, get_inode(inode), sizeof(n));
+	struct inode h; // *get_inode(1);
+	memcpy(&h, get_inode(1), sizeof(n));
+	memcpy(data0, buf, n->size[0]);
+	memcpy(data1 + (int)n->size[0], buf+n->size[0], n->size[1]);
+	data1[n->size[0] + n->size[1]] = '\0';
+	//n->size[1]=;//TODO : second inode size
+	h->ptrs[0] += n->size[0];
+	n->ptrs[1] = h->ptrs[1];
+	h->ptrs[1] += n->size[1];
+}
+
 // Actually write data
 int
 write(const char *path, const char *buf, size_t size, off_t offset)
@@ -169,13 +185,7 @@ write(const char *path, const char *buf, size_t size, off_t offset)
 		write_sp(data1, l, buf, size);
 	} else {
 		if (n->size[0] > 0) {
-			memcpy(data0, buf, n->size[0]);
-			memcpy(data1 + (int)n->size[0], buf+n->size[0], n->size[1]);
-			data1[n->size[0] + n->size[1]] = '\0';
-			//n->size[1]=;//TODO : second inode size
-			h->ptrs[0] += n->size[0];
-			n->ptrs[1] = h->ptrs[1];
-			h->ptrs[1] += n->size[1];
+			write_mp(data0, data1, buf, size);
 		} else {
 			write_sp(data0, l, buf, size);
 		}
