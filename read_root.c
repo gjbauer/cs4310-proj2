@@ -67,12 +67,12 @@ readdir(const char *path)
 	while (true) {
 		e0 = (dirent*)((char*)get_root_start()+n->ptrs[0]);
 		e1 = (dirent*)((char*)get_root_start()+n->ptrs[1]);
-		printf("%s\n", e0->name);	// getaddr
-		if (!strcmp(e0->name, "*")) break;
 		//printf("%s\n", e0->name);	// getaddr
-		printf("%s\n", e1->name);
-		if (!strcmp(e1->name, "*")) break;
+		if (!strcmp(e0->name, "*")) break;
+		printf("%s\n", e0->name);	// getaddr
 		//printf("%s\n", e1->name);
+		if (!strcmp(e1->name, "*")) break;
+		printf("%s\n", e1->name);
 		printf("readdir: getting next inode!\n");
 		n = get_inode(n->iptr);
 	}
@@ -90,6 +90,7 @@ _mknod(const char *path, int mode, int k)
 	printf("find_parent(path) = %d\n", find_parent(path));
 	inode *p = get_inode(k);	// <- parent directory
 	inode *h = get_inode(l);
+	h->refs=1;
 	dirent *p0, *p1, *w;
 	dirent data;
 	data.inum=l;
@@ -105,7 +106,8 @@ _mknod(const char *path, int mode, int k)
 		memcpy(p0, &data, sizeof(data));
 		p->ptrs[1] = n->ptrs[0];
 		memcpy(w, &stop, sizeof(stop));
-		n->ptrs[0] += sizeof(stop);	
+		n->ptrs[0] += sizeof(stop);
+		n->ptrs[1] += sizeof(stop);	
 	} /*else if (p0->active==false) {
 		printf("p0: found empty!\n");
 		memcpy(p0, &data, sizeof(data));
@@ -118,6 +120,7 @@ _mknod(const char *path, int mode, int k)
 		p->iptr = inode_find("*");
 		get_inode(p->iptr)->ptrs[0] = n->ptrs[0];
 		n->ptrs[0] += sizeof(data);
+		n->ptrs[1] += sizeof(data);
 		memcpy(w, &stop, sizeof(stop));
 	} else {
 		printf("found none, getting next inode!\n");
@@ -151,6 +154,8 @@ write(const char *path, const char *buf, size_t size, off_t offset)
 	inode* h = get_inode(1);
 	char *data0, *data1;
 	int i0, i1;
+	//printf("h->ptrs[0] = %d\n", h->ptrs[0]);	// TODO : Move seperately after file unlink
+	//printf("h->ptrs[1] = %d\n", h->ptrs[1]);
 	if (start) {
 		data0 = ((char*)get_root_start()+h->ptrs[0]+offset);
 		start = false;
@@ -164,6 +169,7 @@ write(const char *path, const char *buf, size_t size, off_t offset)
 		n->size[0]=p0;
 		n->ptrs[0] = h->ptrs[0];
 		h->ptrs[0] += size;
+		h->ptrs[1] += size;
 	} else {
 		data1 = ((char*)get_root_start()+h->ptrs[1]);
 		//data0[0]='\0';	//TODO : Worry about write collision later...
@@ -175,13 +181,14 @@ write(const char *path, const char *buf, size_t size, off_t offset)
 			n->ptrs[0] = h->ptrs[0];
 			h->ptrs[0] += n->size[0];
 			n->ptrs[1] = h->ptrs[1];
-			h->ptrs[0] += n->size[1];
+			h->ptrs[1] += n->size[1];
 		} else {
 			strncpy(data0, buf, size);
 			data0[size] = '\0';
 			n->size[0]=size;
 			n->ptrs[0] = h->ptrs[0];
 			h->ptrs[0] += size;
+			h->ptrs[1] += size;
 		}
 	}
 	printf("write(%s, %ld bytes, @+%ld) -> %d\n", path, size, offset, rv);
@@ -193,14 +200,14 @@ int
 read(const char *path, char *buf, size_t size, off_t offset)
 {
 	int rv = 4096;
-	int l = find_parent(path);
-	l = tree_lookup(path, l);
+	int l = tree_lookup(path, find_parent(path));
+	//printf("l = %d\n", l);
 	bool start = true;
 	int p0=0, p1=0, i=0;
 	inode* n = get_inode(l);
 	char *data0, *data1;
 	if (l>-1) {
-read_loop:
+//read_loop:
 		if (start) {
 			data0 = ((char*)get_root_start()+n->ptrs[0]+offset);
 			start = false;
@@ -251,7 +258,7 @@ main(int argc, char *argv[])
 	printf("%s\n", buf);	// hello!
 	mknod("/dir/newmsg.txt", 755);
 	write("/dir/newmsg.txt", "newmsg!", 6, 0);
-	//read("/dir/newmsg.txt", buf, 0, 0);
+	read("/dir/newmsg.txt", buf, 0, 0);
 	printf("reading root\n");
 	readdir("/");
 	printf("reading /dir\n");
@@ -264,8 +271,16 @@ main(int argc, char *argv[])
 	//read("/dir/two.txt", buf, 0, 0);
 	//printf("%s\n", buf);	// two!
 	readdir("/dir");
-	//mkdir("/dir/dir", 755);
-	//readdir("/dir");
+	mkdir("/dir/dir", 755);
+	mknod("/dir/dir/one.txt", 755);
+	printf("reading /dir/dir\n");
+	readdir("/dir/dir");
+	write("/dir/dir/one.txt", "one!", 6, 0);
+	printf("reading /dir/dir/one.txt\n");
+	read("/dir/dir/one.txt", buf, 0, 0);
+	printf("%s\n", buf);
+	printf("reading /dir\n");
+	readdir("/dir");
 	//read("/hello.txt", buf, 0, 0);
 	//printf("%s\n", buf);	// hello!
 	pages_free();
