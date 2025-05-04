@@ -215,28 +215,17 @@ _read(const char *path, char *buf, size_t size, off_t offset, int l)
 	if (l<0) return -ENOENT;
 	bool start = true;
 	inode* n = get_inode(l);
-	printf("r: l = %d\n", l);
-	printf("n->ptrs[0] = %d\n", n->ptrs[0]);
-	printf("n->ptrs[1] = %d\n", n->ptrs[1]);
-	char *data0, *data1;
-	if (start && offset < n->size[0]) {
-		data0 = ((char*)get_root_start()+n->ptrs[0]+offset);
-		data1 = ((char*)get_root_start()+n->ptrs[1]);
+	
+	char *data0 = ((char*)get_root_start()+n->ptrs[0]+offset), *data1 = ((char*)get_root_start()+n->ptrs[1]);
+	if (n->size[0] <= size) {
 		strncpy(buf, data0, n->size[0]);
 		strncat(buf, data1, n->size[1]);
-		start = false;
-	} else if (offset >= n->size[0]) {
-		offset -= n->size[1];
-		data1 = ((char*)get_root_start()+n->ptrs[1]);
-		strncpy(buf, data1, n->size[1]-offset);
-		buf[n->size[1]-offset]='\0';
+		buf[n->size[0]+n->size[1]]='\0';
 	} else {
-		data0 = ((char*)get_root_start()+n->ptrs[0]);
-		data1 = ((char*)get_root_start()+n->ptrs[1]);
-		strncpy(buf, data0, n->size[0]);
-		strncat(buf, data1, n->size[1]);
-		buf[n->size[1]+n->size[1]]='\0';
+		strncpy(buf, data0, size);
+		buf[size]='\0';
 	}
+	
 	if ((n->size[0]+n->size[1])-offset < size) _read(path, buf, size, (size-(n->size[0]+n->size[1])-offset), n->iptr);
 	printf("read(%s, %ld bytes, @+%ld) -> %d\n", path, size, offset, rv);
 	return rv;
