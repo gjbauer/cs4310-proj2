@@ -102,21 +102,10 @@ _mknod(const char *path, int mode, int k)
 {
 	int rv = 0;
 	int l = (!strcmp(path, "/")) ? 0 : inode_find(path);
-	inode *h = get_inode(l);
-	inode *n = get_inode(1);
-	inode *p = get_inode(k);
-	dirent *d;
-	char *data;
+	char *ppath = parent_path(path);
 	
-	d = (p->size[0] == 0) ? ((dirent*)get_data(n->ptrs[0])) : (dirent*)get_data(p->ptrs[0]);
-	n->ptrs[0] = (p->size[0] == 0) ? n->ptrs[0]+sizeof(d) : n->ptrs[0];
-	strncpy(d->name, path, DIR_NAME);
-	d->inum = l;
-	h->refs=1;
-	h->mode=mode;
-	p->size[0]=sizeof(d);
 
-	
+	free (ppath);
 	printf("mknod(%s) -> %d\n", path, rv);
 	return rv;
 }
