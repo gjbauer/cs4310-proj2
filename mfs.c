@@ -179,7 +179,7 @@ _write(const char *path, const char *buf, size_t size, off_t offset, int l)
 	data0 = ((char*)get_root_start()+h->ptrs[0]+offset);
 	data1 = (offset >= n->size[0]) ? ((char*)get_root_start()+h->ptrs[1] + (offset - n->size[0])) : ((char*)get_root_start()+h->ptrs[1]);
 	
-	r = (size > (n->size[0] + n->size[1]  && (n->size[0] + n->size[1]) > 0) && (n->size[0] + n->size[1]) > 0) ? (size - (n->size[0] + n->size[1])) : 0 ;
+	r = (size > (n->size[0] + n->size[1]) && (n->size[0] + n->size[1]) > 0) ? (size - (n->size[0] + n->size[1])) : 0 ;
 	
 	if (offset >= n->size[0] && offset != 0) {
 		printf("write_sp(data1)\n");
@@ -237,7 +237,3 @@ read(const char *path, char *buf, size_t size, off_t offset)
 	int l = tree_lookup(path, find_parent(path));
 	return _read(path, buf, size, offset, l);
 }
-
-
-
-
