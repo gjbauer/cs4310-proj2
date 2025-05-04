@@ -210,10 +210,9 @@ int
 _read(const char *path, char *buf, size_t size, off_t offset, int l)
 {
 	if (size==0) return -1;
-	int rv = 4096;
-	//printf("l = %d\n", l);
 	if (l<0) return -ENOENT;
-	bool start = true;
+	
+	int rv = 4096;
 	inode* n = get_inode(l);
 	
 	char *data0 = ((char*)get_root_start()+n->ptrs[0]+offset), *data1 = ((char*)get_root_start()+n->ptrs[1]);

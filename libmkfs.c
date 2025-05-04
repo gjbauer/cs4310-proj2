@@ -8,18 +8,6 @@
 #include "mkfs.h"
 #include <stdlib.h>
 
-
-int mkstop() {
-    int rv = 0;
-    dirent data;
-    data.inum=0;
-    strcpy(data.name, "*");
-    data.active=true;
-    write("/", (char*)&data, sizeof(data), 0);
-    printf("mkstop(%s) -> %d\n", "*", rv);
-    return rv;
-}
-
 void
 mkfs() {
 	pages_init("data.nufs");

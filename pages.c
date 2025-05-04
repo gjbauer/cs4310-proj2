@@ -41,8 +41,10 @@ pages_init(const char* path)
     for (int i=0; i<=9; i++) alloc_page();
     void* ibm = get_inode_bitmap();
     for (int i=0; i<=512; i++) bitmap_put(ibm, i, 0);
-    inode* ins = get_inode_start();
-    for (int i=0; i<=512; i++) ins[i].size[0]=0, ins[i].size[1]=0;
+    inode ins;
+    ins.size[0]=0, ins.size[1]=0;
+    void* in = get_inode_start();
+    for (int i=0; i<=512; i++) memcpy(((inode*)in+i), &ins, sizeof(ins));
     
 }
 
