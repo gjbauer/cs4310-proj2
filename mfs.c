@@ -67,7 +67,7 @@ parent_path(const char *path)
 	for (int i=0; i<k; i++) {
 		split(trm, i, ptr);
 	}
-	// TODO : Locate a parent directory and return an inode, or an iptr
+	
 	char *m = (char*)malloc(DIR_NAME * sizeof(char));
 	strncpy(m, ptr, DIR_NAME);
 	return m;
@@ -79,41 +79,58 @@ char *get_data(int offset)
 }
 
 int
-readdir(const char *path)
+_readdir(const char *path, int l)
 {
 	int rv=0;
-	int l = (!strcmp(path, "/")) ? 0 : tree_lookup(path, find_parent(path));
+	(l == 0) ? (l = tree_lookup(dir, find_parent(dir))) : l;
+	inode *a = get_inode(l);
+	dirent *e;
 	
-	dirent e;
-	
-	inode* n = get_inode(l);
-	
-	read(path, (char*)&e, sizeof(e), 0);
+	if (a->ptrs[0]==0 && !!strcmp(path, "/")) return;
+	e = (dirent*)get_data(a->ptrs[0]);
+	if (!strcmp(e->name, "")) return;
 	printf("%s\n", e.name);	// getaddr
-	read(path, (char*)&e, sizeof(e), sizeof(dirent*));
+	rv++;
+	
+	if (a->ptrs[1]==0 && !!strcmp(path, "/")) return;
+	e = (dirent*)get_data(a->ptrs[1]);
+	if (!strcmp(e->name, "")) return;
 	printf("%s\n", e.name);	// getaddr
-	//if (!strcmp(e.name, "*")!=0) _readdir(path, int l);
+	rv++;
+	
+	int ptr = a->iptr;
+	rv = (ptr==0) ? (rv) : rv+_readdir(path, ptr);
+	return rv;
+}
+
+int
+readdir(const char *path, int l)
+{
+	int rv=_readdir(path, 0);
 	printf("readdir(%d)\n", rv);
 	return rv;
 }
 
 int
-_mknod(const char *path, int mode, int k)
+mknod(const char *path, int mode, int k)
 {
 	int rv = 0;
 	int l = (!strcmp(path, "/")) ? 0 : inode_find(path);
 	char *ppath = parent_path(path);
 	
+	inode *a = get_inode(1);
+	inode *b = get_inode(tree_lookup(ppath));
+	
+	dirent *e;
+	
+	while (true) {
+	}
+	
+	
 
-	free (ppath);
+	free(ppath);
 	printf("mknod(%s) -> %d\n", path, rv);
 	return rv;
-}
-
-int
-mknod(const char *path, int mode)
-{
-	return _mknod(path, mode, find_parent(path));
 }
 
 int
