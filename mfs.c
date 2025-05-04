@@ -173,8 +173,7 @@ _write(const char *path, const char *buf, size_t size, off_t offset, int l)
 	int rv = 0;
 	(l == 0) ? l = tree_lookup(path, find_parent(path)) : l;
 	
-	inode* n = get_inode(l);
-	inode* h = get_inode(1);
+	inode *n = get_inode(l), *h = get_inode(1);
 	char *data0, *data1;
 	int r;
 	
