@@ -168,17 +168,22 @@ write_mp(char *data0, char *data1, int inode, const char *buf, size_t size)
 
 // Actually write data
 int
-write(const char *path, const char *buf, size_t size, off_t offset)
+_write(const char *path, const char *buf, size_t size, off_t offset, int l)
 {
 	int rv = 0;
-	int l = tree_lookup(path, find_parent(path));
+	(l == 0) ? l = tree_lookup(path, find_parent(path)) : l = l;
 	printf("w: l = %d\n", l);
 	bool start = true;
 	inode* n = get_inode(l);
 	inode* h = get_inode(1);
 	char *data0, *data1;
+	int r=0;
 	
-	data0 = ((char*)get_root_start()+h->ptrs[0]+offset), data1 = (offset >= n->size[0]) ? ((char*)get_root_start()+h->ptrs[1] + (offset - n->size[0])) : ((char*)get_root_start()+h->ptrs[1]), start = false; // How about just call write again if our write isn't finished? No loops...
+	data0 = ((char*)get_root_start()+h->ptrs[0]+offset), data1 = (offset >= n->size[0]) ? ((char*)get_root_start()+h->ptrs[1] + (offset - n->size[0])) : ((char*)get_root_start()+h->ptrs[1]), start = false; // How about just call write again if our write isn't finished? No loops...	//
+	
+	if (size > (n->size[0] + n->size[1])) {
+		r = (size - (n->size[0] + n->size[1]));
+	}
 	
 	if (offset >= n->size[0] && offset != 0) {
 		printf("write_sp(data1)\n");
@@ -192,8 +197,16 @@ write(const char *path, const char *buf, size_t size, off_t offset)
 			write_sp(data0, l, buf, size);
 		}
 	}
+	
+	if (r > 0) _write(path, buf+(size - r), size, offset, (n->iptr==0) ? (n->iptr = find_inode(path)) : (n->iptr = n->iptr));
 	printf("write(%s, %ld bytes, @+%ld) -> %d\n", path, size, offset, rv);
 	return rv;
+}
+
+int
+write(const char *path, const char *buf, size_t size, off_t offset)
+{
+	return _write(path, buf, size_t size, offset, 0);
 }
 
 // Actually read data
