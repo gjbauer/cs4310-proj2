@@ -15,19 +15,14 @@ main(int argc, char *argv[])
 	char buf[256];
 	storage_init("data.nufs");
 	
-	dirent e;
 	
-	inode* n = get_inode(0);
-	
-	read("/", (char*)&e, sizeof(dirent), 0);
-	printf("%s\n", e.name);	// getaddr
-	
-	//readdir("/");	// Empty
-	//mknod("/hello.txt", 755);
+	readdir("/");	// Empty
+	mknod("/hello.txt", 755);
+	//write("/hello.txt", "hello!", 6, 0);
 	//read("/hello.txt", buf, 6, 0);
 	//printf("%s\n", buf);
 	
-	//readdir("/");
+	readdir("/");
 	
 	//mkdir("/dir", 755);
 	

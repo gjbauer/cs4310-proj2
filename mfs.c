@@ -81,21 +81,21 @@ char *get_data(int offset)
 int
 _readdir(const char *path, int l)
 {
-	int rv=0;
-	(l == 0) ? (l = tree_lookup(dir, find_parent(dir))) : l;
+	int rv=2;
+	(l == 0) ? (l = tree_lookup(path, find_parent(path))) : l;
 	inode *a = get_inode(l);
 	dirent *e;
 	
-	if (a->ptrs[0]==0 && !!strcmp(path, "/")) return;
+	if (a->ptrs[0]==0 && !!strcmp(path, "/")) return 0;
 	e = (dirent*)get_data(a->ptrs[0]);
-	if (!strcmp(e->name, "")) return;
-	printf("%s\n", e.name);	// getaddr
+	if (!strcmp(e->name, "")) return 0;
+	printf("%s\n", e->name);	// getaddr
 	rv++;
 	
-	if (a->ptrs[1]==0 && !!strcmp(path, "/")) return;
+	if (a->ptrs[1]==0) return 1;
 	e = (dirent*)get_data(a->ptrs[1]);
-	if (!strcmp(e->name, "")) return;
-	printf("%s\n", e.name);	// getaddr
+	if (!strcmp(e->name, "")) return 1;
+	printf("%s\n", e->name);	// getaddr
 	rv++;
 	
 	int ptr = a->iptr;
@@ -104,7 +104,7 @@ _readdir(const char *path, int l)
 }
 
 int
-readdir(const char *path, int l)
+readdir(const char *path)
 {
 	int rv=_readdir(path, 0);
 	printf("readdir(%d)\n", rv);
@@ -112,21 +112,37 @@ readdir(const char *path, int l)
 }
 
 int
-mknod(const char *path, int mode, int k)
+mknod(const char *path, int mode)
 {
 	int rv = 0;
 	int l = (!strcmp(path, "/")) ? 0 : inode_find(path);
 	char *ppath = parent_path(path);
 	
-	inode *a = get_inode(1);
-	inode *b = get_inode(tree_lookup(ppath));
+	dirent e;
+	inode *n = get_inode(l);
+	n->mode=mode;
 	
-	dirent *e;
+	strncpy(e.name, path, DIR_NAME);
+	e.inum = l;
 	
-	while (true) {
+	int i=0;
+	while(true) {
+		printf("n->ptrs[1] = %d\n", n->ptrs[1]);
+		printf("ppath = %s\n", ppath);
+		if (n->ptrs[0] == 0 && !(!strcmp(ppath, "/")) || (!strcmp(path, "/"))) break;
+		else if (n->ptrs[1] == 0) {
+			i++;
+			break;
+		}
+		else if (n->iptr == 0) {
+			n->iptr = inode_find(ppath);
+		}
+		n = get_inode(n->iptr);
 	}
 	
+	printf("i = %d\n", i);
 	
+	write(ppath, (char*)&e, sizeof(dirent), i*sizeof(dirent));
 
 	free(ppath);
 	printf("mknod(%s) -> %d\n", path, rv);
