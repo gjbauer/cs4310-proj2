@@ -177,13 +177,13 @@ _write(const char *path, const char *buf, size_t size, off_t offset, int l)
 	inode* n = get_inode(l);
 	inode* h = get_inode(1);
 	char *data0, *data1;
-	int r=0;
+	int r;
 	
 	data0 = ((char*)get_root_start()+h->ptrs[0]+offset), data1 = (offset >= n->size[0]) ? ((char*)get_root_start()+h->ptrs[1] + (offset - n->size[0])) : ((char*)get_root_start()+h->ptrs[1]), start = false; // How about just call write again if our write isn't finished? No loops...	//
 	
-	if (size > (n->size[0] + n->size[1])) {
-		r = (size - (n->size[0] + n->size[1]));
-	}
+	if (offset > (n->size[0] + n->size[1])) _write(path, buf+(size - r), size, offset-(n->size[0] + n->size[1]), (n->iptr==0) ? (n->iptr = find_inode(path)) : (n->iptr = n->iptr));
+	
+	(size > (n->size[0] + n->size[1])) ? (r = (size - (n->size[0] + n->size[1]))) : (r = 0) ;
 	
 	if (offset >= n->size[0] && offset != 0) {
 		printf("write_sp(data1)\n");
