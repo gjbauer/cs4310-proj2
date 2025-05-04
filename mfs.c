@@ -172,14 +172,13 @@ _write(const char *path, const char *buf, size_t size, off_t offset, int l)
 {
 	int rv = 0;
 	(l == 0) ? l = tree_lookup(path, find_parent(path)) : l;
-	printf("w: l = %d\n", l);
-	bool start = true;
+	
 	inode* n = get_inode(l);
 	inode* h = get_inode(1);
 	char *data0, *data1;
 	int r;
 	
-	data0 = ((char*)get_root_start()+h->ptrs[0]+offset), data1 = (offset >= n->size[0]) ? ((char*)get_root_start()+h->ptrs[1] + (offset - n->size[0])) : ((char*)get_root_start()+h->ptrs[1]), start = false; // How about just call write again if our write isn't finished? No loops...	//
+	data0 = ((char*)get_root_start()+h->ptrs[0]+offset), data1 = (offset >= n->size[0]) ? ((char*)get_root_start()+h->ptrs[1] + (offset - n->size[0])) : ((char*)get_root_start()+h->ptrs[1]);
 	
 	if (offset > (n->size[0] + n->size[1])) _write(path, buf+(size - r), size, offset-(n->size[0] + n->size[1]), (n->iptr==0) ? (n->iptr = inode_find(path)) : (n->iptr = n->iptr));
 	
