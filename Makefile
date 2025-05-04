@@ -3,7 +3,7 @@ SRCS := $(wildcard *.c)
 OBJS := $(SRCS:.c=.o)
 HDRS := $(wildcard *.h)
 
-CFLAGS := -g `pkg-config fuse --cflags`  -fno-stack-protector 
+CFLAGS := -g `pkg-config fuse --cflags` 
 LDLIBS := `pkg-config fuse --libs`
 
 nufs: $(OBJS)

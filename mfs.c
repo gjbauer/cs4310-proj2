@@ -207,10 +207,10 @@ write(const char *path, const char *buf, size_t size, off_t offset)
 
 // Actually read data
 int
-read(const char *path, char *buf, size_t size, off_t offset)
+_read(const char *path, char *buf, size_t size, off_t offset, int l)
 {
+	if (size==0) return -1;
 	int rv = 4096;
-	int l = tree_lookup(path, find_parent(path));
 	//printf("l = %d\n", l);
 	if (l<0) return -ENOENT;
 	bool start = true;
@@ -237,6 +237,18 @@ read(const char *path, char *buf, size_t size, off_t offset)
 		strncat(buf, data1, n->size[1]);
 		buf[n->size[1]+n->size[1]]='\0';
 	}
+	if ((n->size[0]+n->size[1])-offset < size) _read(path, buf, size, (size-(n->size[0]+n->size[1])-offset), n->iptr);
 	printf("read(%s, %ld bytes, @+%ld) -> %d\n", path, size, offset, rv);
 	return rv;
 }
+
+int
+read(const char *path, char *buf, size_t size, off_t offset)
+{
+	int l = tree_lookup(path, find_parent(path));
+	return _read(path, buf, size, offset, l);
+}
+
+
+
+
