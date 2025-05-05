@@ -18,13 +18,16 @@ main(int argc, char *argv[])
 	
 	readdir("/");	// Empty
 	mknod("/hello.txt", 755);
-	//write("/hello.txt", "hello!", 6, 0);
-	//read("/hello.txt", buf, 6, 0);
-	//printf("%s\n", buf);
+	write("/hello.txt", "hello!", 6, 0);
+	write("/hello.txt", "hello!", 6, 6);
+	read("/hello.txt", buf, 12, 0);	// < focus here...
+	printf("%s\n", buf);
 	
-	readdir("/");
+	//readdir("/");
 	
-	//mkdir("/dir", 755);
+	//mknod("/dir", 755);
+	
+	//readdir("/");
 	
 	
 	/*write("/hello.txt", "hello!", 6, 0);
