@@ -20,7 +20,8 @@ main(int argc, char *argv[])
 	mknod("/hello.txt", 755);
 	write("/hello.txt", "hello!", 6, 0);
 	write("/hello.txt", "hello!", 6, 6);
-	read("/hello.txt", buf, 12, 0);	// < focus here...
+	write("/hello.txt", "hello!", 6, 12);
+	read("/hello.txt", buf, 18, 0);	// < focus here...
 	printf("%s\n", buf);
 	
 	readdir("/");
