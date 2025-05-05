@@ -14,11 +14,11 @@ lookup_loop:
 	p1 = (dirent*)((char*)get_root_start()+n->ptrs[1]);
 	if (!strcmp(p0->name, subpath)) {
 		return p0->inum;
-	} else if (!strcmp(p0->name, "*")) {
+	} else if (n->ptrs[0]==0) {
 		return -ENOENT;
 	} else if (!strcmp(p1->name, subpath)) {
 		return p1->inum;
-	} else if (!strcmp(p1->name, "*")) {
+	} else if (n->ptrs[1]==0) {
 		return -ENOENT;
 	} else {
 		n = get_inode(n->iptr);
