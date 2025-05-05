@@ -20,7 +20,7 @@ lookup_loop:
 		return p1->inum;
 	} else if (n->ptrs[1]==0) {
 		return -ENOENT;
-	} else {
+	} else if (n->iptr!=0) {
 		n = get_inode(n->iptr);
 		goto lookup_loop;
 	}
