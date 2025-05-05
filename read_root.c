@@ -23,7 +23,7 @@ main(int argc, char *argv[])
 	read("/hello.txt", buf, 12, 0);	// < focus here...
 	printf("%s\n", buf);
 	
-	//readdir("/");
+	readdir("/");
 	
 	//mknod("/dir", 755);
 	

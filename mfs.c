@@ -218,14 +218,16 @@ _write(const char *path, const char *buf, size_t size, off_t offset, int l)
 	if (offset > (n->size[0] + n->size[1]) && (n->size[0] + n->size[1]) > 0)
 		_write(path, buf+(size - r), size, offset-(n->size[0] + n->size[1]), (n->iptr==0) ? (n->iptr = inode_find(path)) : (n->iptr = n->iptr));
 	
-	data0 = get_data(h->ptrs[0]+offset);
+	data0 = get_data(h->ptrs[0]);	// +offset
 	data1 = (offset >= n->size[0]) ? get_data(h->ptrs[1] + (offset - n->size[0])) : get_data(h->ptrs[1]);
 	
 	r = (size > (n->size[0] + n->size[1]) && (n->size[0] + n->size[1]) > 0) ? (size - (n->size[0] + n->size[1])) : 0 ;
 	
 	if (offset >= n->size[0] && offset != 0) {
-		printf("write_sp(data1)\n");
-		write_sp(data1, l, 1, buf, size);
+		//printf("write_sp(data1)\n");	// If this were to actually run on a system, you would want to write to previously freed memory one way or another....
+		//write_sp(data1, l, 1, buf, size);
+		printf("write_sp(data0)\n");
+		write_sp(data0, l, 1, buf, size);
 	} else {
 		if (n->size[0] > 0) {
 			printf("write_mp()\n");
