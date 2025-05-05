@@ -19,6 +19,7 @@ int inode_size(inode *d)
 int calc_offset(inode *d, off_t offset)
 {
 	if (d->size[0]!=0) offset-=d->size[0];
+	else return offset;
 	if (d->size[1]==0) return offset;
 	else offset-=d->size[0];
 	if (offset > 0 && n->iptr!=0) {
@@ -27,6 +28,7 @@ int calc_offset(inode *d, off_t offset)
 	} else {
 		//d->iptr = alloc_inode();	// Inode_find()?
 		//d = get_inode(d->iptr);
+		if (offset == 0) return 0;
 		return -1;
 	}
 }
