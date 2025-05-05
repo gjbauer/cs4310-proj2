@@ -11,6 +11,33 @@
 
 dirent stop;
 
+int inode_size(inode *d)
+{
+	return (d->size[0]+d->size[1]);
+}
+
+int calc_offset(inode *d, off_t offset)
+{
+	if (d->size[0]!=0) offset-=d->size[0];
+	if (d->size[1]==0) return offset;
+	else offset-=d->size[0];
+	if (offset > 0 && n->iptr!=0) {
+		d = get_inode(d->iptr);
+		calc_offset(d, offset);
+	} else {
+		return get_inode(1)->ptrs[0]+offset;
+	}
+}
+
+int remainder(inode *d, int size, off_t offset)
+{
+	if (d->size[0]==0) return 0;
+	else if (d->size[1]==0) return 0;
+	else {
+		return (size - ((d->size[0]+d->size[1]) - offset));
+	}
+}
+
 int split(const char *path, int n, char buf[DIR_NAME]) {
 	int rv=0;
 	if (n==0) {
