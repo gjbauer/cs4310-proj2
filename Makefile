@@ -7,7 +7,7 @@ CFLAGS := -g `pkg-config fuse --cflags`
 LDLIBS := `pkg-config fuse --libs`
 
 nufs: $(OBJS)
-	gcc $(CLFAGS) -o $@ nufs.o pages.o bitmap.o inode.o directory.o hash.o libmkfs.o $(LDLIBS)
+	gcc $(CLFAGS) -o $@ nufs.o pages.o bitmap.o inode.o directory.o hash.o $(LDLIBS)
 
 mkfs: $(OBJS)
 	gcc $(CLFAGS) -o mkfs mkfs.o mfs.o pages.o bitmap.o inode.o directory.o hash.o libmkfs.o $(LDLIBS)
