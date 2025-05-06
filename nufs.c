@@ -139,7 +139,7 @@ count_placement(inode *d, const char* path, const char *ppath)
 	dirent *e;
 	while (true) {
 		e = (dirent*)get_data(d->ptrs[0]);
-		if (!strcmp(e->name, "") || ( d->size[0]==0 ) ) break;
+		if (!strcmp(e->name, "") || ( ( d->size[0]==0 ) ) ) break;
 		i++;
 		e = (dirent*)get_data(d->ptrs[1]);
 		if (!strcmp(e->name, "") || (d->size[1]==0) ) break;
@@ -180,6 +180,8 @@ nufs_mknod(const char *path, mode_t mode, dev_t rdev)
 	e.active = true;
 	
 	int i = count_placement(h, path, ppath);
+	
+	printf("count_placement = %d\n", i);
 	
 	nufs_write(ppath, (char*)&e, sizeof(dirent), i*sizeof(dirent), 0);
 	
