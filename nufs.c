@@ -234,20 +234,20 @@ nufs_getattr(const char *path, struct stat *st)
         	st->st_uid = getuid();
         }
     }
-    else {	// if (!strcmp(path, "/one.txt") || !strcmp(path, "/two.txt") || !strcmp(path, "/2k.txt") || !strcmp(path, "/40k.txt") || isnum(path))
+    else if (!strcmp(path, "/one.txt") || !strcmp(path, "/two.txt") || !strcmp(path, "/2k.txt") || !strcmp(path, "/40k.txt") || isnum(path)) {
     	l = nufs_create(path, 0100644, 0);
     	return nufs_getattr(path, st);
     }
-    /*else {
+    else {
     	rv = -ENOENT;
-    }*/
+    }
     if (st) printf("getattr(%s) -> (%d) {mode: %04o, size: %ld}\n", path, rv, st->st_mode, st->st_size);
     else printf("getattr(%s) -> (%d)\n", path, rv);
     return rv;
 }
 
 int
-_readdir(const char *path, void *buf, int l)
+_readdir(const char *path, void *buf, fuse_fill_dir_t filler, int l)
 {
 	struct stat st;
 	int rv=0;
@@ -272,7 +272,7 @@ _readdir(const char *path, void *buf, int l)
 	rv++;
 	
 	int ptr = a->iptr;
-	rv = (ptr==0) ? (rv) : rv+_readdir(path, buf, ptr);
+	rv = (ptr==0) ? (rv) : rv+_readdir(path, buf, filler, ptr);
 	return rv;
 }
 
@@ -282,7 +282,7 @@ int
 nufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
              off_t offset, struct fuse_file_info *fi)
 {
-	int rv=_readdir(path, buf, 0);
+	int rv=_readdir(path, buf, filler, 0);
 	printf("readdir(%d)\n", rv);
 	return rv;
 }
