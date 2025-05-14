@@ -157,10 +157,10 @@ count_placement(inode *d, const char* path, const char *ppath)
 	dirent *e;
 	while (true) {
 		e = (dirent*)get_data(d->ptrs[0]);
-		if (!strcmp(e->name, "") || ( d->size[0]==0 ) ) break;
+		if (!strcmp(e->name, "") || !e->active || (d->size[0]==0 && !(strcmp(path, "/"))) ) break;
 		i++;
 		e = (dirent*)get_data(d->ptrs[1]);
-		if (!strcmp(e->name, "") || (d->size[1]==0) ) break;
+		if (!strcmp(e->name, "") || !e->active ) break;
 		i++;
 		d = (d == 0) ? get_inode( (d->iptr = inode_find(ppath)) ) : get_inode(d->iptr);
 	}
@@ -175,6 +175,7 @@ mknod(const char *path, int mode)
 	char *ppath = parent_path(path);
 	
 	dirent e;
+	inode *d = get_inode(1);
 	inode *h = get_inode(tree_lookup(ppath, find_parent(ppath)));
 	inode *n = get_inode(l);
 	n->mode=mode;
@@ -183,9 +184,18 @@ mknod(const char *path, int mode)
 	e.inum = l;
 	e.active = true;
 	
-	int i = count_placement(h, path, ppath);
+	int count = h->ptrs[0];	// <- This is how we do it...
 	
-	write(ppath, (char*)&e, sizeof(dirent), i*sizeof(dirent));
+	int i=0;
+	while (i<count && count > 1) {
+		h = get_inode(h->iptr);
+	}
+	
+	if ( (i % 2) == 0 ) {
+	} else {
+	}
+	
+	//write(ppath, (char*)&e, sizeof(dirent), i*sizeof(dirent));
 	
 
 	free(ppath);
@@ -205,6 +215,13 @@ int
 mkdir(const char *path, int mode)
 {
 	int rv = mknod(path, mode | 040000);
+	int l = tree_lookup(path, find_parent(path));
+	inode d;
+	d.size[0]=0;
+	d.size[1]=0;
+	d.ptrs[0]=0;
+	inode *n = get_inode(l);
+	memcpy(n, &d, sizeof(d));
 	printf("mkdir(%s) -> %d\n", path, rv);
 	return rv;
 }
@@ -277,7 +294,7 @@ _read(const char *path, const char *buf, size_t size, off_t offset, int l)
 	}
 	else {
 		if (offset < n->size[0]+n->size[1]) {
-			memcpy(buf, get_data(n->ptrs[1]+offset), n->size[1]-(offset-n->size[0]));
+			memcpy(buf, get_data(n->ptrs[1]+(offset-n->ptrs[0])), n->size[1]-(offset-n->size[0]));
 		} else if (n->iptr==0) return -1;
 		else {
 			return _read(path, buf, size, offset - (n->size[0]+n->size[1]), n->iptr);
