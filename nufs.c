@@ -250,8 +250,9 @@ _readdir(const char *path, void *buf, fuse_fill_dir_t filler, int l)
 	dirent e;
 	
 	memcpy(&e, get_data(a->ptrs[0]), sizeof(e));
-	if (!strcmp(e.name, "")) return 0;
+	if (e.active==true) return 0;
 	rv = nufs_getattr(e.name, &st);
+	printf("e.name = %c\n", e.name);
 	assert(rv == 0);
 	filler(buf, e.name, &st, 0);
 	printf("%s\n", e.name);	// getaddr

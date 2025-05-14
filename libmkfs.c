@@ -13,6 +13,7 @@ mkfs() {
 	pages_init("data.nufs");
 	mkdir("/", 755);
 	mknod("/one.txt", 755);
+	readdir("/");
 	//mknod("/two.txt", 755);
 	pages_free();
 }
