@@ -17,8 +17,9 @@ int
 inode_find(const char *path) {
 	void* ptr = (void*)get_inode_bitmap();
 	for (int i=2; i<512; i++) {
+		printf("bitmap_get(ptr, i) = %d\n", bitmap_get(ptr, i));
 		if (bitmap_get(ptr, i)==0) {
-			if (get_inode(i)->size[0]>0&&get_inode(i)->refs==0) return i;
+			return i;
 		}
 	}
 	return alloc_inode(path);

@@ -11,6 +11,8 @@ mknod(const char *path, int mode);
 int
 mkdir(const char *path, int mode);
 int
+mkroot(const char *path, int mode);
+int
 readdir(const char *path);
 int
 write_sp(char *data, int inode, int ptr, const char *buf, size_t size);
