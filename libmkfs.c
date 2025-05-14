@@ -11,12 +11,18 @@
 void
 mkfs() {
 	pages_init("data.nufs");
-	size_t* count = (size_t*)get_root_start();
-	*count = 0;
-	mknod("/", 755);
-	readdir("/");
-	mknod("/two.txt", 755);
-	readdir("/");
+	dirent d;
+	strncpy(d.name, "/", DIR_NAME);
+	d.inum = 0;
+	d.parent = NULL;
+	d.next = NULL;
+	write("/", (char*)&d, sizeof(d), 0);
+	dirent e;
+	read("/", (char*)&e, sizeof(e), 0);
+	printf("%s\n", e.name);
+	//readdir("/");
+	//mknod("/two.txt", 755);
+	//readdir("/");
 	pages_free();
 }
 

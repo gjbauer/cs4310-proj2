@@ -122,17 +122,32 @@ char *get_data(int offset)
 }
 
 int
-inode_read(inode *n, const char *buf, size_t size, off_t offset)
-{	
-	if (offset < n->size[0]) {
-		memcpy(buf, get_data(n->ptrs[0]+offset), n->size[0]-offset);
-		if ( (size - n->size[0]) > 0 ) memcpy(buf+n->size[0], get_data(n->ptrs[1]), ( n->size[1] > (size-n->size[0]) ) ? (size) : (n->size[1]) );
-	}
+inode_write(inode *n, const char *buf, size_t size, off_t offset)
+{
+	int rv = 0;
+	
+	int s = inode_size(n);
+	
+	if (s == 0) write_sp(get_data_end()+offset, n->inum, 0, buf, size);
+	else if (is_empty(n)) write_sp(get_data_end()+(offset-n->size[0]), n->inum, 1, buf, size);
 	else {
-		if (offset < n->size[0]+n->size[1]) {
-			memcpy(buf, get_data(n->ptrs[1]+(offset-n->ptrs[0])), n->size[1]-(offset-n->size[0]));
-		} else if (n->iptr==0) return -1;
+		int r = _remainder(n, size, offset);
+		if (r<=0) {
+			if (offset < n->size[0]) {
+				write_sp(get_data(n->ptrs[0]), n->inum, 0, buf, (n->size[0]==0) ? size : n->size[0] );
+				size-=n->size[0];
+			}
+			write_sp(get_data(n->ptrs[1]), n->inum, 1, buf, size);
+		}
 	}
+	printf("write(%d, %ld bytes, @+%ld) -> %d\n",n->inum, size, offset, rv);
+	return rv;
+}
+
+int
+inode_read(inode *n, const char *buf, size_t size, int l)
+{
+	memcpy(buf, get_data(n->ptrs[l]), n->size[l]);
 }
 
 int
@@ -147,17 +162,16 @@ readdir(const char *path)
 	//read(path, (char*)&count, sizeof(size_t), 0);
 	printf("path = %s\n", path);
 	printf("count = %ld\n", *count);
-	int rv=0;
-	while (rv<*count) {
-		inode_read(a, (char*)&e, 80, (rv*sizeof(dirent))+sizeof(size_t));
+	int rv=1;
+	//while (rv<=*count) {
+		/*inode_read(a, (char*)&e, sizeof(e), rv%2);
 		//memcpy(&e, get_data(a->ptrs[rv % 2]), sizeof(e));
 		printf("%s\n", e.name);	// getaddr
 		rv+=1;
-		//if ( a->iptr == 0 && ( ( rv % 2 ) == 1) ) return rv;
+		if ( a->iptr == 0 && ( ( rv % 2 ) == 1) ) return rv;
 		//printf("%d\n", a->iptr);
-		if ( ( rv % 2 ) == 1 && a->iptr != 0) a = get_inode(a->iptr);
-		//else if ( ( rv % 2 ) == 1 ) break;
-	}
+		else if ( ( rv % 2 ) == 1 ) a = get_inode(a->iptr);*/
+	//}
 
 	printf("readdir(%d)\n", rv);
 	return rv;
@@ -173,6 +187,7 @@ mknod(const char *path, int mode)
 	dirent e;
 	inode *d = get_inode(1);
 	inode *h = get_inode(tree_lookup(ppath, find_parent(ppath)));
+	free(ppath);
 	inode *n = get_inode(l);
 	n->mode=mode;
 	
@@ -180,17 +195,8 @@ mknod(const char *path, int mode)
 	e.inum = l;
 	e.active = true;
 	
-	size_t *count = (size_t*)get_data(h->ptrs[0]);
 	
-	int t = *count;
-	
-	printf("count = %ld\n", t);
-	
-	write(ppath, (char*)&e, sizeof(e), t*sizeof(dirent)+sizeof(size_t));
-	
-	*count = *count + 1;
 
-	free(ppath);
 	printf("mknod(%s) -> %d\n", path, rv);
 	return rv;
 }
