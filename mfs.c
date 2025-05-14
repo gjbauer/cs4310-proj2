@@ -122,21 +122,19 @@ char *get_data(int offset)
 int
 _readdir(const char *path, int l)
 {
-	int rv=2;
+	int rv=0;
 	(l == 0) ? (l = tree_lookup(path, find_parent(path))) : l;
 	inode *a = get_inode(l);
-	dirent *e;
+	dirent e;
 	
-	if (a->ptrs[0]==0 && !!strcmp(path, "/")) return 0;
-	e = (dirent*)get_data(a->ptrs[0]);
-	if (!strcmp(e->name, "")) return 0;
-	printf("%s\n", e->name);	// getaddr
+	memcpy(&e, get_data(a->ptrs[0]), sizeof(e));
+	if (!strcmp(e.name, "")) return 0;
+	printf("%s\n", e.name);	// getaddr
 	rv++;
 	
-	if (a->ptrs[1]==0) return 1;
-	e = (dirent*)get_data(a->ptrs[1]);
-	if (!strcmp(e->name, "")) return 1;
-	printf("%s\n", e->name);	// getaddr
+	memcpy(&e, get_data(a->ptrs[1]), sizeof(e));
+	if (!strcmp(e.name, "") || a->ptrs[1]==0) return 0;
+	printf("%s\n", e.name);	// getaddr
 	rv++;
 	
 	int ptr = a->iptr;
@@ -153,6 +151,23 @@ readdir(const char *path)
 }
 
 int
+count_placement(inode *d, const char* path, const char *ppath)
+{
+	int i=0;
+	dirent *e;
+	while (true) {
+		e = (dirent*)get_data(d->ptrs[0]);
+		if (!strcmp(e->name, "") || ( d->size[0]==0 ) ) break;
+		i++;
+		e = (dirent*)get_data(d->ptrs[1]);
+		if (!strcmp(e->name, "") || (d->size[1]==0) ) break;
+		i++;
+		d = (d == 0) ? get_inode( (d->iptr = inode_find(ppath)) ) : get_inode(d->iptr);
+	}
+	return i;
+}
+
+int
 mknod(const char *path, int mode)
 {
 	int rv = 0;
@@ -160,26 +175,18 @@ mknod(const char *path, int mode)
 	char *ppath = parent_path(path);
 	
 	dirent e;
+	inode *h = get_inode(tree_lookup(ppath, find_parent(ppath)));
 	inode *n = get_inode(l);
 	n->mode=mode;
 	
 	strncpy(e.name, path, DIR_NAME);
 	e.inum = l;
+	e.active = true;
 	
-	int i=0;
-	while(true) {
-		if (n->ptrs[0] == 0 && !(!strcmp(ppath, "/")) || (!strcmp(path, "/"))) break;
-		else if (n->ptrs[1] == 0) {
-			i++;
-			break;
-		}
-		else if (n->iptr == 0) {
-			n->iptr = inode_find(ppath);
-		}
-		n = get_inode(n->iptr);
-	}
+	int i = count_placement(h, path, ppath);
 	
 	write(ppath, (char*)&e, sizeof(dirent), i*sizeof(dirent));
+	
 
 	free(ppath);
 	printf("mknod(%s) -> %d\n", path, rv);
@@ -198,10 +205,6 @@ int
 mkdir(const char *path, int mode)
 {
 	int rv = mknod(path, mode | 040000);
-	//printf("%d\n", count_l(path));
-	// TODO: Nested Directories
-	/*for (int i=0; i<count_l(path)) {
-	}*/
 	printf("mkdir(%s) -> %d\n", path, rv);
 	return rv;
 }
@@ -274,7 +277,7 @@ _read(const char *path, const char *buf, size_t size, off_t offset, int l)
 	}
 	else {
 		if (offset < n->size[0]+n->size[1]) {
-			memcpy(buf, get_data(n->ptrs[1]+(offset-n->ptrs[0])), n->size[1]-(offset-n->size[0]));
+			memcpy(buf, get_data(n->ptrs[1]+offset), n->size[1]-(offset-n->size[0]));
 		} else if (n->iptr==0) return -1;
 		else {
 			return _read(path, buf, size, offset - (n->size[0]+n->size[1]), n->iptr);
