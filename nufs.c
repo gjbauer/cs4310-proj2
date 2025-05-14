@@ -91,15 +91,11 @@ count_l(const char *path) {
 int
 find_parent(const char *path)
 {
-	char trm[DIR_NAME];
-	int i;
-	for(i=0; path[i]; i++) trm[i]=path[i];
-	if (trm[i]=='/') trm[i]='\0';
 	char ptr[DIR_NAME];
-	int k = count_l(trm);
+	int k = count_l(path);
 	int n=0;
 	for (int i=0; i<k; i++) {
-		split(trm, i, ptr);
+		split(path, i, ptr);
 		n = tree_lookup(ptr, n);
 		if (n<0) return -ENOENT;
 	}
@@ -111,15 +107,11 @@ find_parent(const char *path)
 char*
 parent_path(const char *path)
 {
-	char trm[DIR_NAME];
-	int i;
-	for(i=0; path[i]; i++) trm[i]=path[i];
-	if (trm[i]=='/') trm[i]='\0';
 	char ptr[DIR_NAME];
-	int k = count_l(trm);
+	int k = count_l(path);
 	int n=0;
 	for (int i=0; i<k; i++) {
-		split(trm, i, ptr);
+		split(path, i, ptr);
 	}
 	
 	char *m = (char*)malloc(DIR_NAME * sizeof(char));
@@ -133,16 +125,17 @@ char *get_data(int offset)
 }
 
 int
-count_placement(inode *d, const char* path, const char *ppath)
+count_placement(int l, const char* path, const char *ppath)
 {
+	inode *d = get_inode(l);
 	int i=0;
 	dirent *e;
 	while (true) {
 		e = (dirent*)get_data(d->ptrs[0]);
-		if (!strcmp(e->name, "") || ( ( d->size[0]==0 ) ) ) break;
+		if (( ( d->size[0]==0 ) ) ) break;
 		i++;
 		e = (dirent*)get_data(d->ptrs[1]);
-		if (!strcmp(e->name, "") || (d->size[1]==0) ) break;
+		if ((d->size[1]==0) ) break;
 		i++;
 		d = (d == 0) ? get_inode( (d->iptr = inode_find(ppath)) ) : get_inode(d->iptr);
 	}
@@ -179,7 +172,7 @@ nufs_mknod(const char *path, mode_t mode, dev_t rdev)
 	e.inum = l;
 	e.active = true;
 	
-	int i = count_placement(h, path, ppath);
+	int i = count_placement(l, path, ppath);
 	
 	printf("count_placement = %d\n", i);
 	
@@ -238,7 +231,6 @@ nufs_getattr(const char *path, struct stat *st)
     }
     else if (!strcmp(path, "/one.txt") || !strcmp(path, "/two.txt") || !strcmp(path, "/2k.txt") || !strcmp(path, "/40k.txt") || isnum(path)) {
     	l = nufs_create(path, 0100644, 0);
-    	return nufs_getattr(path, st);
     }
     else {
     	rv = -ENOENT;
@@ -443,7 +435,7 @@ write_sp(char *data, int inode, int ptr, const char *buf, size_t size)
 	memcpy(&n, get_inode(inode), sizeof(n));
 	struct inode h; // *get_inode(1);
 	memcpy(&h, get_inode(1), sizeof(n));
-	memcpy(data, buf, size);
+	memcpy(buf, data, size);
 	data[size] = '\0';
 	n.size[ptr]=size;
 	printf("ptr = %d\n", ptr);
