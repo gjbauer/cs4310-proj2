@@ -14,14 +14,6 @@ unsigned int hash(const unsigned char *str)
     return hash % 512;
 }
 
-char* extend(const char *path) {
-	char c = (char)hash(path);
-	char *hpath = calloc((strlen(path)+1), sizeof(char));
-	strcpy(hpath, path);
-	strcat(hpath, &c);
-	return hpath;
-}
-
 /*int main() {
 	printf("%ld\n", hash("hello") % 512);
 }*/
