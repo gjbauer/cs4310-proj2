@@ -139,7 +139,7 @@ readdir(const char *path)
 	printf("%s\n", hd->name);
 	while (hd->next!=NULL) {
 		hd=hd->next;
-		read(path, (char*)hd, sizeof(dirent), 0);
+		//read(path, (char*)hd, sizeof(dirent), 0);
 		printf("%s\n", hd->name);
 	}
 
