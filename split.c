@@ -8,7 +8,7 @@ const char *path1 = "/path/one/";
 
 char *split(const char *path, int n) {
 	int rv=0;
-	char *splt = (char*)calloc(DIR_NAME, sizeof(char));
+	char splt[DIR_NAME];
 	if (n==0) {
 		strcpy(splt, "/");
 	} else {
@@ -19,7 +19,9 @@ char *split(const char *path, int n) {
 		}
 		if (splt[i-1]=='/') splt[i-1]='\0';
 	}
-	return splt;
+	char *buf = (char*)calloc(DIR_NAME, sizeof(char));
+	strncpy(buf, splt, DIR_NAME);
+	return buf;
 }
 
 int main() {

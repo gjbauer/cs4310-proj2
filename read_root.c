@@ -36,6 +36,8 @@ main(int argc, char *argv[])
 	
 	readdir("/");
 	
+	mknod("/dir", 755);
+	
 	
 	/*write("/hello.txt", "hello!", 6, 0);*/
 	//readdir("/");
