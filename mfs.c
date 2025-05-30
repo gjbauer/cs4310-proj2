@@ -151,10 +151,9 @@ int
 mknod(const char *path, int mode)
 {
 	int rv = 0;
-	char *ppath = parent_path(path);
+	char *ppath = split(path, count_l(path)-1);
 	int l = (!strcmp(path, "/")) ? 0 : inode_find(ppath);
 	
-	//dirent e;
 	inode *d = get_inode(1);
 	inode *h = get_inode(tree_lookup(ppath, find_parent(ppath)));
 	free(ppath);
@@ -166,12 +165,6 @@ mknod(const char *path, int mode)
 	}
 	//hd->next=n;
 	n->mode=mode;
-	
-	//strncpy(e.name, path, DIR_NAME);
-	//e.inum = l;
-	//e.active = true;
-	
-	
 
 	printf("mknod(%s) -> %d\n", path, rv);
 	return rv;
