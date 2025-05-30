@@ -153,12 +153,9 @@ mknod(const char *path, int mode)
 	int rv = 0;
 	char *ppath = split(path, count_l(path)-1);
 	int l = (!strcmp(path, "/")) ? 0 : inode_find(ppath);
-	
-	inode *d = get_inode(1);
-	inode *h = get_inode(tree_lookup(ppath, find_parent(ppath)));
-	free(ppath);
 	dirent *hd;
 	read(ppath, (char*)&hd, sizeof(dirent), 0);
+	free(ppath);
 	inode *n = get_inode(l);
 	while (hd->next!=NULL) {
 		hd=hd->next;
