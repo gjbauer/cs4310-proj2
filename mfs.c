@@ -1,4 +1,4 @@
-#include <string.h>
+#include <bsd/string.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -83,7 +83,7 @@ int
 find_parent(const char *path)
 {
 	char *ptr;
-	int k = count_l(trm);
+	int k = count_l(path);
 	int n=0;
 	for (int i=0; i<k; i++) {
 		ptr = split(path, i);
@@ -153,14 +153,29 @@ mknod(const char *path, int mode)
 	int rv = 0;
 	char *ppath = split(path, count_l(path)-1);
 	int l = (!strcmp(path, "/")) ? 0 : inode_find(ppath);
-	dirent *hd;
-	read(ppath, (char*)&hd, sizeof(dirent), 0);
-	free(ppath);
+	
 	inode *n = get_inode(l);
-	while (hd->next!=NULL) {
-		hd=hd->next;
+	
+	dirent hd;
+	dirent d;
+	strncpy(d.name, path, DIR_NAME);
+	d.inum = n->inum;
+	
+	int p = 0;
+	
+	while (true) {
+		read(ppath, (char*)&hd, sizeof(dirent), p*sizeof(dirent));
+		p++;
+		if (hd.next==NULL) {
+			hd.next=&d;
+			write(ppath, (char*)&hd, sizeof(dirent), (p-1)*sizeof(dirent));
+			break;
+		}
 	}
-	//hd->next=n;
+	
+	write(ppath, (char*)&d, sizeof(dirent), p*sizeof(dirent));
+	free(ppath);
+	
 	n->mode=mode;
 
 	printf("mknod(%s) -> %d\n", path, rv);
@@ -255,6 +270,6 @@ write(const char *path, const char *buf, size_t size, off_t offset)
 int
 read(const char *path, char *buf, size_t size, off_t offset)
 {
-	int l = tree_lookup(path, find_parent(path));
+	int l = (!strcmp("/", path)) ? 0 : tree_lookup(path, find_parent(path));
 	return _read(path, buf, size, offset, l);
 }
