@@ -32,7 +32,7 @@ main(int argc, char *argv[])
 	
 	//readdir("/");
 	
-	//mknod("/dir", 755);
+	mknod("/dir", 755);
 	
 	//readdir("/");
 	

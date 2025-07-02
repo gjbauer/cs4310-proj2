@@ -137,7 +137,6 @@ readdir(const char *path)
 	} else {
 		ppath = split(path, count_l(path)-1);
 	}
-	//printf("%s\n", ppath);
 	
 	int l = tree_lookup(path, find_parent(path));
 	inode *n = get_inode(l);
@@ -148,12 +147,7 @@ readdir(const char *path)
 	
 	while (true) {
 		read(ppath, (char*)&hd, sizeof(dirent), p*sizeof(dirent));
-		//memcpy((char*)&hd, get_data(n->ptrs[1]/2), sizeof(dirent));
 		printf("%s\n", hd.name);
-		//printf("%d\n", n->ptrs[0]);
-		//printf("%d\n", n->size[0]);
-		//printf("%d\n", n->ptrs[1]/2);
-		//printf("%d\n", p);
 		p++;
 		if (hd.next==NULL) {
 			break;
@@ -261,7 +255,6 @@ _read(const char *path, const char *buf, size_t size, off_t offset, int l)
 	inode *n = get_inode(l);
 	
 	int r = ( size - (n->size[0]+n->size[1]) );
-	// TODO : Reads larger than a single inode...
 	
 	if (offset < n->size[0]) {
 		memcpy(buf, get_data(n->ptrs[0]+offset), n->size[0]-offset);
