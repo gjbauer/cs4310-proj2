@@ -17,9 +17,6 @@ mkfs() {
 	d.parent = NULL;
 	d.next = NULL;
 	write("/", (char*)&d, sizeof(d), 0);
-	dirent e;
-	read("/", (char*)&e, sizeof(e), 0);
-	printf("%s\n", e.name);
 	//readdir("/");
 	//mknod("/two.txt", 755);
 	//readdir("/");

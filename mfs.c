@@ -130,17 +130,34 @@ inode_read(inode *n, const char *buf, size_t size, int l)
 int
 readdir(const char *path)
 {
-	int l = tree_lookup(path, find_parent(path));
-	inode *a = get_inode(l);
+	int rv = 0;
+	char *ppath;
+	if (!strcmp("/", path)) {
+		ppath = split(path, 0);
+	} else {
+		ppath = split(path, count_l(path)-1);
+	}
+	//printf("%s\n", ppath);
 	
-	int rv=1;
-	dirent *hd = malloc(sizeof(dirent));
-	read(path, (char*)hd, sizeof(dirent), 0);
-	printf("%s\n", hd->name);
-	while (hd->next!=NULL) {
-		hd=hd->next;
-		//read(path, (char*)hd, sizeof(dirent), 0);
-		printf("%s\n", hd->name);
+	int l = tree_lookup(path, find_parent(path));
+	inode *n = get_inode(l);
+	
+	dirent hd;
+	
+	int p = 0;
+	
+	while (true) {
+		read(ppath, (char*)&hd, sizeof(dirent), p*sizeof(dirent));
+		//memcpy((char*)&hd, get_data(n->ptrs[1]/2), sizeof(dirent));
+		printf("%s\n", hd.name);
+		//printf("%d\n", n->ptrs[0]);
+		//printf("%d\n", n->size[0]);
+		//printf("%d\n", n->ptrs[1]/2);
+		//printf("%d\n", p);
+		p++;
+		if (hd.next==NULL) {
+			break;
+		}
 	}
 
 	printf("readdir(%d)\n", rv);
@@ -173,6 +190,7 @@ mknod(const char *path, int mode)
 		}
 	}
 	
+	d.next=NULL;
 	write(ppath, (char*)&d, sizeof(dirent), p*sizeof(dirent));
 	free(ppath);
 	

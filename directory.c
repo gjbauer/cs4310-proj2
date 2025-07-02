@@ -7,11 +7,11 @@
 
 int tree_lookup(const char* path, int i) {
 	if (!strcmp(path, "/")) return 0;
-	int k = count_l(path);
+	//int k = count_l(path);
 	
-	for (int i=0; i<k-1; i++) {
+	/*for (int i=0; i<k-1; i++) {
 		
-	}
+	}*/
 	
 
 	return -ENOENT;

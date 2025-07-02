@@ -34,10 +34,11 @@ main(int argc, char *argv[])
 	
 	//mknod("/dir", 755);
 	
+	//readdir("/");
+	
+	//mknod("/dir", 755);
+	
 	readdir("/");
-	
-	mknod("/dir", 755);
-	
 	
 	/*write("/hello.txt", "hello!", 6, 0);*/
 	//readdir("/");
