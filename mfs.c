@@ -169,7 +169,9 @@ mknod(const char *path, int mode)
 	
 	// TODO: Write dirent to a location in memory
 	
-	write(ppath, (char*)&file, sizeof(dirent), 0);
+	for (;;) {
+		if () write(ppath, (char*)&file, sizeof(dirent), 0);
+	}
 
 	printf("mknod(%s) -> %d\n", path, rv);
 	return rv;
