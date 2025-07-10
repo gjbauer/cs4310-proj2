@@ -16,4 +16,6 @@ int
 readdir(const char *path);
 int
 write_sp(char *data, int inode, int ptr, const char *buf, size_t size);
+int
+count_l(const char *path);
 #endif
