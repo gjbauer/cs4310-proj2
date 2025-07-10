@@ -16,7 +16,8 @@ mkfs() {
 	d.inum = 0;
 	d.parent = NULL;
 	d.next = NULL;
-	write("/", (char*)&d, sizeof(d), 0);
+	memcpy(get_root_start(), (char*)&d, sizeof(dirent));
+	//write("/", (char*)&d, sizeof(d), 0);
 	//readdir("/");
 	//mknod("/two.txt", 755);
 	//readdir("/");
