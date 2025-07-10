@@ -24,8 +24,12 @@ int tree_lookup(const char* path, int i) {
 	ptr = root;
 	
 	for (int i=0; i<level; i++) {
+		memcpy((char*)&file, get_data(ptr->ptrs[i%2]), sizeof(dirent));
+		printf("current search target: %s\n", split(path, i));
+		printf("current file: %s\n", file.name);
 		printf("inum: %d\n", ptr->inum);
-		//memcpy((char*)&file, get_data(ptr->ptrs[i%2]), sizeof(dirent));
+		printf("i % 2: %d\n", i%2);
+		if (!strcmp(file.name, split(path, i))) ptr = get_inode(file.inum);
 		if ( (i%2) == 0 ) ptr = get_inode(ptr->iptr);
 	}
 

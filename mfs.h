@@ -18,4 +18,8 @@ int
 write_sp(char *data, int inode, int ptr, const char *buf, size_t size);
 int
 count_l(const char *path);
+char*
+split(const char *path, int n);
+char*
+get_data(int offset);
 #endif
