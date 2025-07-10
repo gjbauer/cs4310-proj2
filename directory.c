@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <errno.h>
 
-int tree_lookup(const char* path, int i) {
+int tree_lookup(const char* path) {
 	inode *root = get_inode(0);
 	
 	inode *ptr;

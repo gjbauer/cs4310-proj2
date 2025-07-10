@@ -87,7 +87,7 @@ find_parent(const char *path)
 	int n=0;
 	for (int i=0; i<k; i++) {
 		ptr = split(path, i);
-		n = tree_lookup(ptr, n);
+		n = tree_lookup(ptr);
 		if (n<0) return -ENOENT;
 	}
 	return n;
@@ -138,7 +138,7 @@ readdir(const char *path)
 		ppath = split(path, count_l(path)-1);
 	}
 	
-	int l = tree_lookup(path, find_parent(path));
+	int l = tree_lookup(path);
 	inode *n = get_inode(l);
 	
 	dirent hd;
@@ -195,7 +195,7 @@ int
 _write(const char *path, const char *buf, size_t size, off_t offset, int l)
 {
 	int rv = 0;
-	(l == 0) ? l = tree_lookup(path, find_parent(path)) : l;
+	(l == 0) ? l = tree_lookup(path) : l;
 	inode *n = get_inode(l), *h = get_inode(1);
 	
 	int s = inode_size(n);
@@ -232,7 +232,7 @@ _write(const char *path, const char *buf, size_t size, off_t offset, int l)
 int
 _read(const char *path, const char *buf, size_t size, off_t offset, int l)
 {
-	(l == 0) ? l = tree_lookup(path, find_parent(path)) : l;
+	(l == 0) ? l = tree_lookup(path) : l;
 	inode *n = get_inode(l);
 	
 	int r = ( size - (n->size[0]+n->size[1]) );
@@ -262,6 +262,6 @@ write(const char *path, const char *buf, size_t size, off_t offset)
 int
 read(const char *path, char *buf, size_t size, off_t offset)
 {
-	int l = (!strcmp("/", path)) ? 0 : tree_lookup(path, find_parent(path));
+	int l = (!strcmp("/", path)) ? 0 : tree_lookup(path);
 	return _read(path, buf, size, offset, l);
 }
