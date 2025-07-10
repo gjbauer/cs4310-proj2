@@ -29,11 +29,17 @@ int tree_lookup(const char* path) {
 		printf("current file: %s\n", file.name);
 		printf("inum: %d\n", ptr->inum);
 		printf("i % 2: %d\n", i%2);
-		if (!strcmp(file.name, split(path, i))) ptr = get_inode(file.inum);
+		if (!strcmp(file.name, split(path, i))) {
+			dirent *temp = (dirent*)get_data(ptr->ptrs[i%2]);
+		}
 		if ( (i%2) == 0 ) ptr = get_inode(ptr->iptr);
 	}
 	
 	printf("searching for main file...");
+	
+	for (int i=0; i<500; i++) {
+		
+	}
 
 	return -ENOENT;
 }

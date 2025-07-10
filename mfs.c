@@ -163,13 +163,11 @@ mknod(const char *path, int mode)
 {
 	int rv = 0;
 	char *ppath = split(path, count_l(path)-1);
-	int l = tree_lookup(ppath);
 	
-	inode *parent = get_inode(l);
+	dirent file;
+	strncpy(file.name,path,DIR_NAME);
 	
-	if ()
-	
-	n->mode=mode;
+	// TODO: Write dirent to a location in memory
 
 	printf("mknod(%s) -> %d\n", path, rv);
 	return rv;
