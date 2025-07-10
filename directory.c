@@ -6,6 +6,11 @@
 #include <stdlib.h>
 #include <errno.h>
 
+bool is_valid(char *str) {
+	if (!str[0] == '/')
+		return false;
+}
+
 int tree_lookup(const char* path) {
 	inode *root = get_inode(0);
 	
@@ -39,10 +44,15 @@ int tree_lookup(const char* path) {
 		if ( (i%2) == 0 ) ptr = get_inode(ptr->iptr);
 	}
 	
-	printf("searching for main file...");
+	printf("searching for main file...\n");
 	
 	for (int i=0; i<500; i++) {
-		
+		memcpy((char*)&file, get_data(ptr->ptrs[i%2]), sizeof(dirent));
+		if (!(is_valid(file.name))) {
+			printf("returning -ENOENT\n");
+			return -ENOENT;
+		}
+		if (!strcmp(path, file.name)) return file.inum;
 	}
 
 	return -ENOENT;

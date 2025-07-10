@@ -168,6 +168,8 @@ mknod(const char *path, int mode)
 	strncpy(file.name,path,DIR_NAME);
 	
 	// TODO: Write dirent to a location in memory
+	
+	write(ppath, (char*)&file, sizeof(dirent), 0);
 
 	printf("mknod(%s) -> %d\n", path, rv);
 	return rv;

@@ -15,9 +15,9 @@ main(int argc, char *argv[])
 	char buf[256];
 	storage_init("data.nufs");
 	
-	tree_lookup("/", 0);
+	tree_lookup("/");
 	
-	tree_lookup("/dir/dir", 0);
+	tree_lookup("/dir/dir");
 	
 	//readdir("/");	// Empty
 	//mknod("/hello.txt", 755);
