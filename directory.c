@@ -32,6 +32,8 @@ int tree_lookup(const char* path, int i) {
 		if (!strcmp(file.name, split(path, i))) ptr = get_inode(file.inum);
 		if ( (i%2) == 0 ) ptr = get_inode(ptr->iptr);
 	}
+	
+	printf("searching for main file...");
 
 	return -ENOENT;
 }
