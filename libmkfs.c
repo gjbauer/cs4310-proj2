@@ -12,7 +12,7 @@ void
 mkfs() {
 	pages_init("data.nufs");
 	dirent d;
-	strncpy(d.name, "/", DIR_NAME);
+	strcpy(d.name, "/");
 	d.inum = 0;
 	d.parent = NULL;
 	d.next = NULL;

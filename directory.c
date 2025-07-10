@@ -7,7 +7,9 @@
 #include <errno.h>
 
 bool is_valid(char *str) {
-	if (!str[0] == '/')
+	if (str[0] == '/')
+		return true;
+	else
 		return false;
 }
 
@@ -47,14 +49,20 @@ int tree_lookup(const char* path) {
 	printf("searching for main file...\n");
 	
 	for (int i=0; i<500; i++) {
+		//printf("current file: %s\n", file.name);
+		//printf("current search target: %s\n", path);
 		memcpy((char*)&file, get_data(ptr->ptrs[i%2]), sizeof(dirent));
 		if (!(is_valid(file.name))) {
 			printf("returning -ENOENT\n");
 			return -ENOENT;
 		}
-		if (!strcmp(path, file.name)) return file.inum;
+		if (!strncmp(path, file.name, DIR_NAME)) {
+			printf("returning inum %d\n", file.inum);
+			return file.inum;
+		}
 	}
 
+	printf("returning -ENOENT\n");
 	return -ENOENT;
 }
 int directory_put(inode* dd, const char* name, int inum) {
