@@ -31,6 +31,10 @@ int tree_lookup(const char* path) {
 		printf("i % 2: %d\n", i%2);
 		if (!strcmp(file.name, split(path, i))) {
 			dirent *temp = (dirent*)get_data(ptr->ptrs[i%2]);
+			
+			ptr = get_inode(temp->inum);
+			
+			break;
 		}
 		if ( (i%2) == 0 ) ptr = get_inode(ptr->iptr);
 	}
