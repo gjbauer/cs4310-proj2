@@ -7,13 +7,9 @@
 #include <errno.h>
 
 int tree_lookup(const char* path, int i) {
-	//int k = count_l(path);
-	
-	/*for (int i=0; i<k-1; i++) {
-		
-	}*/
-	
 	inode *root = get_inode(0);
+	
+	inode *ptr;
 	
 	dirent file;
 	
@@ -23,6 +19,15 @@ int tree_lookup(const char* path, int i) {
 	
 	memcpy((char*)&file, get_root_start(), sizeof(dirent));
 	
+	printf("Dirent name: %s\n", file.name);
+	
+	ptr = root;
+	
+	for (int i=0; i<level; i++) {
+		printf("inum: %d\n", ptr->inum);
+		//memcpy((char*)&file, get_data(ptr->ptrs[i%2]), sizeof(dirent));
+		if ( (i%2) == 0 ) ptr = get_inode(ptr->iptr);
+	}
 
 	return -ENOENT;
 }

@@ -17,6 +17,8 @@ main(int argc, char *argv[])
 	
 	tree_lookup("/", 0);
 	
+	tree_lookup("/dir/dir", 0);
+	
 	//readdir("/");	// Empty
 	//mknod("/hello.txt", 755);
 	//write("/hello.txt", "hello!", 6, 0);
