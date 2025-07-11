@@ -131,27 +131,21 @@ int
 readdir(const char *path)
 {
 	int rv = 0;
-	char *ppath;
-	if (!strcmp("/", path)) {
-		ppath = split(path, 0);
-	} else {
-		ppath = split(path, count_l(path)-1);
-	}
+	char *ppath = split(path, count_l(path)-1);
 	
-	int l = tree_lookup(path);
+	int l = tree_lookup(ppath);
 	inode *n = get_inode(l);
 	
-	dirent hd;
-	
-	int p = 0;
+	dirent file;
 	
 	while (true) {
-		read(ppath, (char*)&hd, sizeof(dirent), p*sizeof(dirent));
-		printf("%s\n", hd.name);
-		p++;
-		if (hd.next==NULL) {
+		memcpy((char*)&file, get_data(n->ptrs[rv%2]), sizeof(dirent));
+		if (file.name[0]!='/' || ( n->ptrs[rv%2] == 0 && rv > 0 ) ) {
 			break;
 		}
+		rv++;
+		printf("%s\n", file.name);
+		if ( ( rv % 2 ) == 0 ) n = get_inode(n->iptr);
 	}
 
 	printf("readdir(%d)\n", rv);
@@ -163,15 +157,33 @@ mknod(const char *path, int mode)
 {
 	int rv = 0;
 	char *ppath = split(path, count_l(path)-1);
+	int l = inode_find(ppath);
 	
-	dirent file;
-	strncpy(file.name,path,DIR_NAME);
+	inode *n = get_inode(l);
 	
-	// TODO: Write dirent to a location in memory
+	dirent hd;
+	dirent d;
+	strncpy(d.name, path, DIR_NAME);
+	d.inum = n->inum;
 	
-	for (;;) {
-		//if () write(ppath, (char*)&file, sizeof(dirent), 0);
-	}
+	int p = 0;
+	
+	read(ppath, (char*)&hd, sizeof(dirent), p*sizeof(dirent));
+	
+	printf("%s\n", hd.name);
+	
+	/*while (true) {
+		read(ppath, (char*)&hd, sizeof(dirent), p*sizeof(dirent));
+		if (hd.name[0]!='/') {
+			break;
+		}
+		p++;
+	}*/
+	
+	write(ppath, (char*)&d, sizeof(dirent), p*sizeof(dirent));
+	free(ppath);
+	
+	n->mode=mode;
 
 	printf("mknod(%s) -> %d\n", path, rv);
 	return rv;
