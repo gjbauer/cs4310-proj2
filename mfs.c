@@ -157,30 +157,28 @@ mknod(const char *path, int mode)
 {
 	int rv = 0;
 	char *ppath = split(path, count_l(path)-1);
-	int l = inode_find(ppath);
 	
+	int l = tree_lookup(ppath);
 	inode *n = get_inode(l);
-	
-	dirent hd;
-	dirent d;
-	strncpy(d.name, path, DIR_NAME);
-	d.inum = n->inum;
 	
 	int p = 0;
 	
-	read(ppath, (char*)&hd, sizeof(dirent), p*sizeof(dirent));
+	dirent ptr;
 	
-	printf("%s\n", hd.name);
+	dirent file;
+	strcpy(file.name, path);
 	
-	/*while (true) {
-		read(ppath, (char*)&hd, sizeof(dirent), p*sizeof(dirent));
-		if (hd.name[0]!='/') {
+	while (true) {
+		memcpy((char*)&ptr, get_data(n->ptrs[rv%2]), sizeof(dirent));
+		if (file.name[0]!='/' || ( n->ptrs[rv%2] == 0 && rv > 0 ) ) {
 			break;
 		}
-		p++;
-	}*/
+		rv++;
+		printf("%s\n", ptr.name);
+		if ( ( rv % 2 ) == 0 ) n = get_inode(n->iptr);
+	}
 	
-	write(ppath, (char*)&d, sizeof(dirent), p*sizeof(dirent));
+	memcpy(get_root_start() + n->ptrs[rv%2], (char*)&file, sizeof(dirent));
 	free(ppath);
 	
 	n->mode=mode;
