@@ -157,28 +157,28 @@ mknod(const char *path, int mode)
 {
 	int rv = 0;
 	char *ppath = split(path, count_l(path)-1);
+	int l = inode_find(ppath);
 	
-	int l = tree_lookup(ppath);
 	inode *n = get_inode(l);
+	
+	dirent hd;
+	dirent d;
+	strncpy(d.name, path, DIR_NAME);
+	d.inum = n->inum;
 	
 	int p = 0;
 	
-	dirent ptr;
-	
-	dirent file;
-	strcpy(file.name, path);
-	
 	while (true) {
-		memcpy((char*)&ptr, get_data(n->ptrs[rv%2]), sizeof(dirent));
-		if (file.name[0]!='/' || ( n->ptrs[rv%2] == 0 && rv > 0 ) ) {
+		read(ppath, (char*)&hd, sizeof(dirent), p*sizeof(dirent));
+		p++;
+		if (hd.next==NULL) {
+			hd.next=&d;
+			write(ppath, (char*)&hd, sizeof(dirent), (p-1)*sizeof(dirent));
 			break;
 		}
-		rv++;
-		printf("%s\n", ptr.name);
-		if ( ( rv % 2 ) == 0 ) n = get_inode(n->iptr);
 	}
 	
-	memcpy(get_root_start() + n->ptrs[rv%2], (char*)&file, sizeof(dirent));
+	write(ppath, (char*)&d, sizeof(dirent), p*sizeof(dirent));
 	free(ppath);
 	
 	n->mode=mode;
@@ -207,21 +207,28 @@ int
 _write(const char *path, const char *buf, size_t size, off_t offset, int l)
 {
 	int rv = 0;
-	(l == 0) ? l = tree_lookup(path) : l;
-	inode *n = get_inode(l), *h = get_inode(1);
+	
+	inode *file = get_inode(l), *open_data = get_inode(1);
 	
 	int s = inode_size(n);
 	
-	if (s == 0) write_sp(get_data_end()+offset, l, 0, buf, size);
-	else if (is_empty(n)) write_sp(get_data_end()+(offset-n->size[0]), l, 1, buf, size);
-	else {
-		int r = _remainder(n, size, offset);
+	if ( n->size[0]==0 || n->size[1]==0 ) {
+		// TODO: Inode with pointers not already written....do some stuff?
+	}
+	
+	int remainder = offset - n->size[0] - n->size[1];
+	
+	/*	int r = _remainder(n, size, offset);
 		if (r<=0) {
-			if (offset < n->size[0]) {
-				write_sp(get_data(n->ptrs[0]), l, 0, buf, (n->size[0]==0) ? size : n->size[0] );
-				size-=n->size[0];
+			if (offset+size < n->size[0]) {
+				printf("writing %d bytes to first pointer...", (n->size[0]==0) ? size : n->size[0]-offset);
+				size-=(n->size[0]==0) ? size : n->size[0]-offset;
+				write_sp(get_data(n->ptrs[0]+offset), l, 0, buf, (n->size[0]==0) ? size : n->size[0]-offset );
 			}
-			write_sp(get_data(n->ptrs[1]), l, 1, buf, size);
+			if (size>0) {
+				printf("writing %d bytes to second pointer...", size);
+				write_sp(get_data(n->ptrs[1]), l, 1, buf, size);
+			}
 		}
 		else {
 			if (n->iptr == 0) {
@@ -230,13 +237,15 @@ _write(const char *path, const char *buf, size_t size, off_t offset, int l)
 				inode *h = get_inode(n->iptr);
 				h->size[0]=0, h->size[1]=0;
 			}
+			printf("remainder...");
 			if (_remainder(n, size, offset) >= size) {
 				return _write(path, buf, (size), offset - s, n->iptr);
 			}
 			else
 				return _write(path, buf, (size - _remainder(n, size, offset)), (0), n->iptr);
-		}
-	}
+		}*/
+		
+	
 	printf("write(%s, %ld bytes, @+%ld) -> %d\n", path, size, offset, rv);
 	return rv;
 }
@@ -258,11 +267,11 @@ _read(const char *path, const char *buf, size_t size, off_t offset, int l)
 			memcpy(buf, get_data(n->ptrs[1]+(offset-n->ptrs[0])), n->size[1]-(offset-n->size[0]));
 		} else if (n->iptr==0) return -1;
 		else {
-			return _read(path, buf, size, offset - (n->size[0]+n->size[1]), n->iptr);
+			//return _read(path, buf, size, offset - (n->size[0]+n->size[1]), n->iptr);
 		}
 	}
 	
-	if (r>0) return _read(path, buf, r, offset - (n->size[0]+n->size[1]), n->iptr);
+	//if (r>0) return _read(path, buf, r, offset - (n->size[0]+n->size[1]), n->iptr);
 }
 
 int

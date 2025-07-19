@@ -96,7 +96,7 @@ find_parent(const char *path)
 	int n=0;
 	for (int i=0; i<k; i++) {
 		split(path, i, ptr);
-		n = tree_lookup(ptr, n);
+		n = tree_lookup(ptr);
 		if (n<0) return -ENOENT;
 	}
 	// TODO : Locate a parent directory and return an inode, or an iptr
@@ -148,7 +148,7 @@ int
 nufs_access(const char *path, int mask)
 {	//if (!strcmp(path, "/")) return rv;
     int rv = 0;
-    int l = tree_lookup(path, find_parent(path));
+    int l = tree_lookup(path);
     rv = (l>-1) ? F_OK : -ENOENT;
     printf("access(%s, %04o) -> %d\n", path, mask, rv);
     return rv;
@@ -164,7 +164,7 @@ nufs_mknod(const char *path, mode_t mode, dev_t rdev)
 	char *ppath = parent_path(path);
 	
 	dirent e;
-	inode *h = get_inode(tree_lookup(ppath, find_parent(ppath)));
+	inode *h = get_inode(tree_lookup(ppath));
 	inode *n = get_inode(l);
 	n->mode=mode;
 	
@@ -187,7 +187,7 @@ nufs_mknod(const char *path, mode_t mode, dev_t rdev)
 int
 nufs_create(const char *path, mode_t mode, struct fuse_file_info *fi) {
 	if (nufs_mknod(path, mode, 0)) {
-    		int l = tree_lookup(path, find_parent(path));
+    		int l = tree_lookup(path);
     		inode *n = get_inode(l);
         	n->mode = mode; // regular file
         	n->size[0] = 0;
@@ -214,7 +214,7 @@ nufs_getattr(const char *path, struct stat *st)
 // What I hate about this is how it will now create a file for each one that is tests exists...not very great of average UX
 {
     int rv = 0;
-    int l = tree_lookup(path, find_parent(path));
+    int l = tree_lookup(path);
     inode *n;
     if (strcmp(path, "/") == 0) {
         st->st_mode = 040755; // directory
@@ -245,7 +245,7 @@ _readdir(const char *path, void *buf, fuse_fill_dir_t filler, int l)
 {
 	struct stat st;
 	int rv=0;
-	(l == 0) ? (l = tree_lookup(path, find_parent(path))) : l;
+	(l == 0) ? (l = tree_lookup(path)) : l;
 	inode *a = get_inode(l);
 	dirent e;
 	
@@ -296,7 +296,7 @@ int
 nufs_unlink(const char *path)
 {
     int rv = -1;
-    int l = tree_lookup(path, find_parent(path));
+    int l = tree_lookup(path);
     if (l<0) return -ENOENT;
     /*size_t* count = (size_t*)get_root_start();
     dirent *ent = (dirent*)get_root_start()+1;
@@ -347,7 +347,7 @@ nufs_rmdir(const char *path)
 // called to move a file within the same filesystem
 int
 nufs_rename(const char *from, const char *to) {
-    int l = tree_lookup(from, find_parent(from));
+    int l = tree_lookup(from);
     int rv;
     nul.active=false;
     if (!(rv = (l>0) ? 0 : -ENOENT)) {
@@ -399,7 +399,7 @@ nufs_open(const char *path, struct fuse_file_info *fi)
 int
 _read(const char *path, const char *buf, size_t size, off_t offset, int l)
 {
-	(l == 0) ? l = tree_lookup(path, find_parent(path)) : l;
+	(l == 0) ? l = tree_lookup(path) : l;
 	inode *n = get_inode(l);
 	
 	int r = ( size - (n->size[0]+n->size[1]) );
@@ -425,7 +425,7 @@ _read(const char *path, const char *buf, size_t size, off_t offset, int l)
 int
 nufs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi)
 {
-	int l = tree_lookup(path, find_parent(path));
+	int l = tree_lookup(path);
 	return _read(path, buf, size, offset, l);
 }
 
@@ -450,7 +450,7 @@ int
 _write(const char *path, const char *buf, size_t size, off_t offset, int l)
 {
 	int rv = 0;
-	(l == 0) ? l = tree_lookup(path, find_parent(path)) : l;
+	(l == 0) ? l = tree_lookup(path) : l;
 	inode *n = get_inode(l), *h = get_inode(1);
 	
 	int s = inode_size(n);
@@ -461,10 +461,12 @@ _write(const char *path, const char *buf, size_t size, off_t offset, int l)
 		int r = _remainder(n, size, offset);
 		if (r<=0) {
 			if (offset < n->size[0]) {
+				printf("writing to first pointer...");
 				write_sp(get_data(n->ptrs[0]+offset), l, 0, buf, n->size[0]-offset);
 				size-=n->size[0];
 			}
 			if (size > 0) {
+				printf("writing to second pointer...");
 				write_sp(get_data(n->ptrs[1]+(offset-n->size[0])), l, 1, buf, size );
 			}
 		}
