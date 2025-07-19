@@ -277,7 +277,9 @@ _read(const char *path, const char *buf, size_t size, off_t offset, int l)
 int
 write(const char *path, const char *buf, size_t size, off_t offset)
 {
-	return _write(path, buf, size, offset, 0);
+	// TODO: maybe look for the correct inode depending on offset then call to _write?
+	
+	//return _write(path, buf, size, offset, 0);
 }
 
 int
