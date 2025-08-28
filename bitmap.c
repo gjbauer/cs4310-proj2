@@ -2,13 +2,15 @@
 
 int bitmap_get(void* bm, int ii) {
 	int* ptr = (int*)bm;
-	ptr =  ptr + ii;
+	int os = ii / sizeof(int);
+	ptr =  ptr + os;
 	return *ptr;
 }
 
 void bitmap_put(void* bm, int ii, int vv) {
 	int* ptr = (int*)bm;
-	ptr =  ptr + ii;
+	int os = ii / sizeof(int);
+	ptr =  ptr + os;
 	*ptr = vv;
 }
 

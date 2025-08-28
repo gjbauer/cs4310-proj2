@@ -16,7 +16,6 @@
 typedef struct dirent {
     char name[DIR_NAME];
     int  inum;
-    int count;
     char type;
     bool active;
     struct dirent *parent;
