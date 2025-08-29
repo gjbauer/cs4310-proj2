@@ -5,6 +5,9 @@
 
 #define DIR_NAME 48
 
+#define FILE 'F'
+#define DIRECTORY 'D'
+
 #include "slist.h"
 #include "pages.h"
 #include "inode.h"
@@ -14,9 +17,7 @@ typedef struct dirent {
     char name[DIR_NAME];
     int  inum;
     int count;
-    char type;
     bool active;
-    struct dirent *parent;
     bool next;
     //char _reserved[11];
 } dirent;

@@ -14,12 +14,10 @@ mkfs() {
 	dirent root;
 	strcpy(root.name, "/");
 	root.inum = 0;
-	root.next==0;
-	root.parent==NULL;
+	root.next==(struct dirent*){0};
 	inode root_node;
 	root_node.ptrs[0]=0;
-	root_node.size[0]=sizeof(dirent);
-	root_node.size[1]=0;
+	root_node.size=sizeof(dirent);
 	memcpy(get_root_start(), (char*)&root, sizeof(dirent));
 	memcpy(get_inode(0), (char*)&root_node, sizeof(inode));
 	//write("/", (char*)&d, sizeof(d), 0);

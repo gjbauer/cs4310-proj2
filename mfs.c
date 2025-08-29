@@ -9,12 +9,12 @@
 #include "mkfs.h"
 #include "mfs.h"
 
-int inode_size(inode *d)
+/*int inode_size(inode *d)
 {
 	return (d->size[0]+d->size[1]);
 }
 
-int calc_offset(inode *d, off_t offset)
+/*int calc_offset(inode *d, off_t offset)
 {
 	if (d->size[0]!=0) offset-=d->size[0];
 	else return offset;
@@ -29,9 +29,9 @@ int calc_offset(inode *d, off_t offset)
 		if (offset == 0) return 0;
 		return -1;
 	}
-}
+}*/
 
-int _remainder(inode *d, int size, off_t offset)
+/*int _remainder(inode *d, int size, off_t offset)
 {
 	if (d->size[0]==0) return 0;
 	else if (d->size[1]==0) return 0;
@@ -40,9 +40,9 @@ int _remainder(inode *d, int size, off_t offset)
 		printf("offset = %d\n", offset);
 		return (size - ((d->size[0]+d->size[1]) - offset));
 	}
-}
+}*/
 
-char* get_data_end()
+/*char* get_data_end()
 {
 	return (char*)get_root_start() + get_inode(1)->ptrs[0];
 }
@@ -50,7 +50,7 @@ char* get_data_end()
 bool is_empty(inode *d)
 {
 	return (d->size[0]==0 || d->size[1]==0);
-}
+}*/
 
 char *split(const char *path, int n) {
 	int rv=0;
@@ -98,7 +98,7 @@ char *get_data(int offset)
 	return ((char*)get_root_start()+offset);
 }
 
-int
+/*int
 inode_write(inode *n, const char *buf, size_t size, off_t offset)
 {
 	int rv = 0;
@@ -125,9 +125,9 @@ int
 inode_read(inode *n, const char *buf, size_t size, int l)
 {
 	memcpy(buf, get_data(n->ptrs[l]), n->size[l]);
-}
+}*/
 
-int
+/*int
 readdir(const char *path)
 {
 	int rv = 0;
@@ -150,7 +150,7 @@ readdir(const char *path)
 
 	printf("readdir(%d)\n", rv);
 	return rv;
-}
+}*/
 
 int
 mknod(const char *path, int mode)
@@ -187,7 +187,7 @@ mknod(const char *path, int mode)
 	return rv;
 }
 
-int
+/*int
 write_sp(char *data, int inode, int ptr, const char *buf, size_t size)
 {
 	struct inode n; // *get_inode(inode);
@@ -201,7 +201,7 @@ write_sp(char *data, int inode, int ptr, const char *buf, size_t size)
 	h.ptrs[0] += size;
 	memcpy(get_inode(inode), &n, sizeof(n));
 	memcpy(get_inode(1), &h, sizeof(h));
-}
+}*/
 
 int
 _write(const char *path, const char *buf, size_t size, off_t offset, int l)
@@ -253,7 +253,7 @@ _write(const char *path, const char *buf, size_t size, off_t offset, int l)
 int
 _read(const char *path, const char *buf, size_t size, off_t offset, int l)
 {
-	(l == 0) ? l = tree_lookup(path) : l;
+	/*(l == 0) ? l = tree_lookup(path) : l;
 	inode *n = get_inode(l);
 	
 	int r = ( size - (n->size[0]+n->size[1]) );
@@ -269,7 +269,7 @@ _read(const char *path, const char *buf, size_t size, off_t offset, int l)
 		else {
 			//return _read(path, buf, size, offset - (n->size[0]+n->size[1]), n->iptr);
 		}
-	}
+	}*/
 	
 	//if (r>0) return _read(path, buf, r, offset - (n->size[0]+n->size[1]), n->iptr);
 }

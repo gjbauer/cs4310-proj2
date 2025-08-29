@@ -45,9 +45,9 @@ pages_init(const char* path)
     void* in = get_inode_start();
     for (int i=0; i<=512; i++) {
     	ins.inum=i;
-    	ins.size[0]=0, ins.size[1]=0;
-		ins.ptrs[0]=0, ins.ptrs[1]=0;
-		ins.refs==0;
+    	ins.size=0;
+	ins.ptrs[0]=0, ins.ptrs[1]=0;
+	ins.refs==0;
     	memcpy(((inode*)in+i), &ins, sizeof(ins));
     }
     

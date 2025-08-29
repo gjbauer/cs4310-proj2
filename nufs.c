@@ -23,7 +23,7 @@
 
 dirent nul;
 
-int inode_size(inode *d)
+/*int inode_size(inode *d)
 {
 	return (d->size[0]+d->size[1]);
 }
@@ -62,7 +62,7 @@ char* get_data_end()
 bool is_empty(inode *d)
 {
 	return (d->size[0]==0 || d->size[1]==0);
-}
+}*/
 
 int split(const char *path, int n, char buf[DIR_NAME]) {
 	int rv=0;
@@ -124,7 +124,7 @@ char *get_data(int offset)
 	return ((char*)get_root_start()+offset);
 }
 
-int
+/*int
 count_placement(int l, const char* path, const char *ppath)
 {
 	inode *d = get_inode(l);
@@ -140,7 +140,7 @@ count_placement(int l, const char* path, const char *ppath)
 		d = (d == 0) ? get_inode( (d->iptr = inode_find(ppath)) ) : get_inode(d->iptr);
 	}
 	return i;
-}
+}*/
 
 // implementation for: man 2 access
 // Checks if a file exists.
@@ -172,11 +172,11 @@ nufs_mknod(const char *path, mode_t mode, dev_t rdev)
 	e.inum = l;
 	e.active = true;
 	
-	int i = count_placement(l, path, ppath);
+	//int i = count_placement(l, path, ppath);
 	
-	printf("count_placement = %d\n", i);
+	//printf("count_placement = %d\n", i);
 	
-	nufs_write(ppath, (char*)&e, sizeof(dirent), i*sizeof(dirent), 0);
+	//nufs_write(ppath, (char*)&e, sizeof(dirent), i*sizeof(dirent), 0);
 	
 
 	free(ppath);
@@ -190,8 +190,8 @@ nufs_create(const char *path, mode_t mode, struct fuse_file_info *fi) {
     		int l = tree_lookup(path);
     		inode *n = get_inode(l);
         	n->mode = mode; // regular file
-        	n->size[0] = 0;
-        	n->size[1] = 0;
+        	//n->size[0] = 0;
+        	//n->size[1] = 0;
         	return l;
 	} else return -1;
 }
@@ -225,7 +225,7 @@ nufs_getattr(const char *path, struct stat *st)
     	if (st) {
     		n = get_inode(l);
         	st->st_mode = n->mode; // regular file
-        	st->st_size = n->size[0];	// TODO : This should be a function which calculates size from the inodes..
+        	st->st_size = n->size;	// TODO : This should be a function which calculates size from the inodes..
         	st->st_uid = getuid();
         }
     }
@@ -399,7 +399,7 @@ nufs_open(const char *path, struct fuse_file_info *fi)
 int
 _read(const char *path, const char *buf, size_t size, off_t offset, int l)
 {
-	(l == 0) ? l = tree_lookup(path) : l;
+	/*(l == 0) ? l = tree_lookup(path) : l;
 	inode *n = get_inode(l);
 	
 	int r = ( size - (n->size[0]+n->size[1]) );
@@ -418,7 +418,7 @@ _read(const char *path, const char *buf, size_t size, off_t offset, int l)
 		}
 	}
 	
-	if (r>0) return _read(path, buf, r, offset - (n->size[0]+n->size[1]), n->iptr);
+	if (r>0) return _read(path, buf, r, offset - (n->size[0]+n->size[1]), n->iptr);*/
 }
 
 // Actually read data
@@ -429,7 +429,7 @@ nufs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_fi
 	return _read(path, buf, size, offset, l);
 }
 
-int
+/*int
 write_sp(char *data, int inode, int ptr, const char *buf, size_t size)
 {
 	struct inode n; // *get_inode(inode);
@@ -444,12 +444,12 @@ write_sp(char *data, int inode, int ptr, const char *buf, size_t size)
 	h.ptrs[0] += size;
 	memcpy(get_inode(inode), &n, sizeof(n));
 	memcpy(get_inode(1), &h, sizeof(h));
-}
+}*/
 
 int
 _write(const char *path, const char *buf, size_t size, off_t offset, int l)
 {
-	int rv = 0;
+	/*int rv = 0;
 	(l == 0) ? l = tree_lookup(path) : l;
 	inode *n = get_inode(l), *h = get_inode(1);
 	
@@ -478,9 +478,9 @@ _write(const char *path, const char *buf, size_t size, off_t offset, int l)
 			else
 				return _write(path, buf, (size - _remainder(n, size, offset)), (0), n->iptr);
 		}
-	}
-	printf("write(%s, %ld bytes, @+%ld) -> %d\n", path, size, offset, rv);
-	return rv;
+	}*/
+	//printf("write(%s, %ld bytes, @+%ld) -> %d\n", path, size, offset, rv);
+	//return rv;
 }
 
 // Actually write data

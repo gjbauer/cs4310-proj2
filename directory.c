@@ -84,24 +84,30 @@ int directory_delete(inode* dd, const char* name)
 slist* directory_list(const char* path)
 {
 	int inum = tree_lookup(path);
-	inode *ptr = get_inode(inum);;
-	dirent file;
+	inode *ptr = get_inode(inum);
+	dirent *file = (dirent*)pages_get_page(ptr->ptrs[0]+5);	// Data pages start at 5
 	
 	slist *dirlist;
 	char *data = (char*)malloc(2 * (DIR_NAME+1) * sizeof(char));	// DIR_NAME+1 to include our delimiter ;)
 	
-	for (int i=0;; i++) {
-		memcpy((char*)&file, get_data(ptr->ptrs[i%2]), sizeof(dirent));
+	//printf("size of dirent : %d\n", sizeof(dirent));
+	
+	//printf("page size / size of dirent : %d\n", 4096/sizeof(dirent));
+	
+	// TODO : Keep track of how many files we have covered to know when to get the next page....
+	
+	for (int i=0 ;; i++) {
 		if (i % 2 == 0)
 		{
 			char *temp = (char*)malloc(i * (DIR_NAME+1) * sizeof(char));
 			strncpy(temp, data, i * (DIR_NAME+1));
 			data = (char*)realloc(data, i+2 * (DIR_NAME+1) * sizeof(char));
 		}
-		strncat(data, file.name, DIR_NAME);
+		strncat(data, file->name, DIR_NAME);
 		strncat(data, ";", 1);					// Choose a delimiter...I think a semicolon ( ; ) will work...
-		if (file.next==false) break;
-		if ( (i%2) == 0 ) ptr = get_inode(ptr->iptr);
+		if (file->next==false) break;
+		else file++;
+		if ( i == 4096/sizeof(dirent) ) ptr = get_inode(ptr->iptr);
 	}
 	
 	dirlist = s_split(data, ';');
