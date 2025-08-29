@@ -5,9 +5,6 @@
 
 #define DIR_NAME 48
 
-#define FILE 'F'
-#define DIRECTORY 'D'
-
 #include "slist.h"
 #include "pages.h"
 #include "inode.h"

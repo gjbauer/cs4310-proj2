@@ -83,7 +83,6 @@ int directory_delete(inode* dd, const char* name)
 
 slist* directory_list(const char* path)
 {
-	// TODO: Implement a function which lists all files in a directory in an slist
 	int inum = tree_lookup(path);
 	inode *ptr = get_inode(inum);;
 	dirent file;
@@ -95,18 +94,15 @@ slist* directory_list(const char* path)
 		memcpy((char*)&file, get_data(ptr->ptrs[i%2]), sizeof(dirent));
 		if (i % 2 == 0)
 		{
-			// TODO: Grow our dynamic array
 			char *temp = (char*)malloc(i * (DIR_NAME+1) * sizeof(char));
 			strncpy(temp, data, i * (DIR_NAME+1));
 			data = (char*)realloc(data, i+2 * (DIR_NAME+1) * sizeof(char));
 		}
 		strncat(data, file.name, DIR_NAME);
-		strncat(data, ";", 1); // TODO: Choose a delimiter...I think a semicolon ( ; ) will work...
+		strncat(data, ";", 1);					// Choose a delimiter...I think a semicolon ( ; ) will work...
 		if (file.next==false) break;
 		if ( (i%2) == 0 ) ptr = get_inode(ptr->iptr);
 	}
-	
-	printf("pre-split data : %s\n", data);
 	
 	dirlist = s_split(data, ';');
 	

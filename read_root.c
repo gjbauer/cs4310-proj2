@@ -20,15 +20,10 @@ main(int argc, char *argv[])
 	
 	data = s_split("/;/foo;/bar", ';');
 	
-	printf("slist : %s\n", data->data);
-	
-	data = data->next;
-	
-	printf("slist : %s\n", data->data);
-	
-	data = data->next;
-	
-	printf("slist : %s\n", data->data);
+	while (data!=NULL) {
+		printf("slist : %s\n", data->data);
+		data = data->next;
+	}
 	
 	data = directory_list("/");
 	
