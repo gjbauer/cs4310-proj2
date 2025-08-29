@@ -67,6 +67,25 @@ int directory_put(inode* dd, const char* name, int inum)
 	strncpy(file.name, name, DIR_NAME);
 	file.inum = inum;
 	
+	dirent *ptr = (dirent*)pages_get_page(dd->ptrs[0]+5);
+	
+	for (int count=0 ;; count++)
+	{
+		if (ptr->active==false) break;
+		else if ( count == 4096/sizeof(dirent) ) ptr = (dirent*)pages_get_page(dd->ptrs[1]+5);	// Data pages start at 5
+		else if ( count == 8192/sizeof(dirent) ) {
+			count = 0;
+			dd = get_inode(dd->iptr);
+		}
+		else if (ptr->next == false ) {
+			ptr++;
+			break;
+		}
+		else ptr++;
+	}
+	
+	memcpy((char*)ptr, (char*)&file, sizeof(dirent));
+	
 	return 0;
 }
 
