@@ -1,23 +1,60 @@
 #include "inode.h"
 #include "directory.h"
 #include "hash.h"
+#include "mfs.h"
 #include <string.h>
 #include <stdlib.h>
+#include <errno.h>
 
-//void directory_init() {}
-//int directory_lookup(inode* dd, const char* name) {}
 int tree_lookup(const char* path) {
-	size_t* count = (size_t*)get_root_start();
-	printf("hash: %d\n", hash(path));
-	dirent *ent = (dirent*)get_root_start()+1;
-	for (int i=0; i<*count; i++) {
-		if (!strcmp(ent->name, path)) return ent->inum;
-		*ent++;
+	inode *root = get_inode(0);
+	
+	inode *ptr;
+	
+	dirent file;
+	
+	int level = count_l(path);
+	
+	printf("Level of file in directory structure: %d\n", level);
+	
+	ptr = root;
+	
+	for (int i=0; i<level; i++) {
+		memcpy((char*)&file, get_data(ptr->ptrs[i%2]), sizeof(dirent));
+		//printf("current search target: %s\n", split(path, i));
+		//printf("current file: %s\n", file.name);
+		//printf("inum: %d\n", ptr->inum);
+		//printf("i % 2: %d\n", i%2);
+		if (!strcmp(file.name, split(path, i))) {
+			dirent *temp = (dirent*)get_data(ptr->ptrs[i%2]);
+			
+			ptr = get_inode(temp->inum);
+			
+			break;
+		}
+		if ( (i%2) == 0 ) ptr = get_inode(ptr->iptr);
 	}
-	return -1;
+	
+	printf("searching for main file...\n");
+	
+	for (int i=0; i<500; i++) {
+		if (i % 2 == 0 && i > 0 ) {
+			ptr = get_inode(ptr->iptr);
+		}
+		//printf("current file: %s\n", file.name);
+		//printf("current search target: %s\n", path);
+		memcpy((char*)&file, get_data(ptr->ptrs[i%2]), sizeof(dirent));
+		if (!strncmp(path, file.name, DIR_NAME)) {
+			printf("returning inum %d\n", file.inum);
+			return file.inum;
+		}
+	}
+
+	printf("returning -ENOENT\n");
+	return -ENOENT;
 }
 int directory_put(inode* dd, const char* name, int inum) {
-	dirent* d = malloc(sizeof(dirent*));
+	/*dirent* d = malloc(sizeof(dirent*));
 	strcpy(d->name, name);
 	d->inum = inum;
 	dirent *ent = (dirent*)get_root_start();
@@ -26,9 +63,7 @@ int directory_put(inode* dd, const char* name, int inum) {
 		else *ent++;
 	}
 	if (!ent) return -1;
-	memcpy(ent, &d, sizeof(d));
+	memcpy(ent, &d, sizeof(d));*/
 	return 0;
 }
-//int directory_delete(inode* dd, const char* name) {}
-//slist* directory_list(const char* path) {}
-//void print_directory(inode* dd) {}
+

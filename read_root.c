@@ -1,55 +1,81 @@
 #include <string.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <errno.h>
 #include "pages.h"
 #include "inode.h"
 #include "bitmap.h"
 #include "directory.h"
-
-// Actually read data
-int
-read(const char *path, char *buf, size_t size)
-{
-    int rv = 6;
-    //strcpy(buf, "hello\n");
-    int l = tree_lookup(path);
-    inode* n = get_inode(l);
-    void *data = (void*)(uintptr_t)n->ptrs[0];
-    memcpy(buf, get_data_start(), size);
-    printf("read(%s, %ld bytes)\n", path, size);
-    return rv;
-}
-
-// Actually write data
-int
-write(const char *path, const char *buf, size_t size)
-{
-    int rv = -1;
-    int l = tree_lookup(path);
-    if (l==-1) {
-    	int l = alloc_inode(path);
-    }
-    inode* n = get_inode(l);
-    //void *b = (void*)(uintptr_t)n->ptrs[0];
-    memcpy(get_data_start(), buf, size);
-    printf("write(%s, %ld bytes)\n", path, size);
-    return rv;
-}
+#include "mkfs.h"
+#include "mfs.h"
 
 int
 main(int argc, char *argv[])
 {
+	char buf[256];
 	storage_init("data.nufs");
-	dirent *root = (dirent*)get_root_start()+1;	// Root directory starts at the beginning of data segment...
-	size_t* count = (size_t*)get_root_start();
-	int i=0;
-	while (i<*count) {
-		//printf("%s\n", root->name);
-		//printf("%d\n", root->inum);
-		*root++, i++;
-	}
-	char buff[256];
-	//write("/hello.txt", "hello\n", 6);
-	read("/hello.txt", buff, 6);
-	printf("%s\n", buff);
+	
+	//tree_lookup("/");
+	
+	//tree_lookup("/dir/dir");
+	
+	//readdir("/");	// Empty
+	mknod("/hello.txt", 755);
+	//write("/hello.txt", "hello!", 6, 0);
+	//write("/hello.txt", "hello!", 6, 6);
+	//write("/hello.txt", "hello!", 6, 12);
+	//read("/hello.txt", buf, 12, 6);	// < focus here...
+	//printf("%s\n", buf);
+	//write("/hello.txt", "hello!", 6, 18);
+	//read("/hello.txt", buf, 18, 6);	// < focus here...
+	//printf("%s\n", buf);
+	
+	/*read("/hello.txt", buf, 24, 0);	// < focus here...
+	printf("%s\n", buf);*/
+	
+	readdir("/");
+	
+	//mknod("/dir", 755);
+	
+	//readdir("/");
+	
+	//mknod("/dir", 755);
+	
+	//readdir("/");
+	
+	/*write("/hello.txt", "hello!", 6, 0);*/
+	//readdir("/");
+	//read("/hello.txt", buf, 24, 0);
+	//printf("%s\n", buf);	// hello!
+	
+	
+	
+	//mknod("/dir/newmsg.txt", 755);
+	//write("/dir/newmsg.txt", "newmsg!", 6, 0);
+	//read("/dir/newmsg.txt", buf, 0, 0);
+	//printf("reading root\n");
+	//readdir("/");
+	//printf("reading /dir\n");
+	//readdir("/dir");
+	//read("/hello.txt", buf, 0, 0);
+	//printf("%s\n", buf);	// hello!
+	//printf("%s\n", buf);	// newmsg!
+	//mknod("/dir/two.txt", 755);
+	//write("/dir/two.txt", "two!", 6, 0);
+	//read("/dir/two.txt", buf, 0, 0);
+	//printf("%s\n", buf);	// two!
+	//readdir("/dir");
+	//mkdir("/dir/dir", 755);
+	//mknod("/dir/dir/one.txt", 755);
+	//printf("reading /dir/dir\n");
+	//readdir("/dir/dir");
+	//write("/dir/dir/one.txt", "one!", 6, 0);
+	//printf("reading /dir/dir/one.txt\n");
+	//read("/dir/dir/one.txt", buf, 0, 0);
+	//printf("%s\n", buf);
+	//printf("reading /dir\n");
+	//readdir("/dir");
+	//read("/hello.txt", buf, 0, 0);
+	//printf("%s\n", buf);	// hello!
 	pages_free();
 }
