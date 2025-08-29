@@ -24,7 +24,8 @@ int tree_lookup(const char* path) {
 	
 	inode *ptr;
 	
-	dirent file;
+	//dirent file;
+	dirent *file = (dirent*)pages_get_page(ptr->ptrs[0]+5);	// Data pages start at 5
 	
 	int level = count_l(path);
 	
@@ -45,7 +46,7 @@ int tree_lookup(const char* path) {
 			
 			break;
 		}
-		if ( (i%2) == 0 ) ptr = get_inode(ptr->iptr);
+		//if ( (i%2) == 0 ) ptr = get_inode(ptr->iptr);
 	}
 	
 	//printf("searching for main file...\n");
@@ -106,8 +107,9 @@ slist* directory_list(const char* path)
 		strncat(data, file->name, DIR_NAME);
 		strncat(data, ";", 1);					// Choose a delimiter...I think a semicolon ( ; ) will work...
 		if (file->next==false) break;
+		else if ( i == 4096/sizeof(dirent) ) dirent *file = (dirent*)pages_get_page(ptr->ptrs[1]+5);	// Data pages start at 5
 		else file++;
-		if ( i == 4096/sizeof(dirent) ) ptr = get_inode(ptr->iptr);
+		if ( i == 8192/sizeof(dirent) ) ptr = get_inode(ptr->iptr);
 	}
 	
 	dirlist = s_split(data, ';');
