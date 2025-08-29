@@ -16,10 +16,13 @@ mkfs() {
 	root.inum = 0;
 	root.next==(struct dirent*){0};
 	inode root_node;
+	inode free_data;
+	free_data.ptrs[0]=1;	// Next open page....
 	root_node.ptrs[0]=0;
 	root_node.size=sizeof(dirent);
 	memcpy(get_root_start(), (char*)&root, sizeof(dirent));
 	memcpy(get_inode(0), (char*)&root_node, sizeof(inode));
+	memcpy(get_inode(1), (char*)&free_data, sizeof(inode));
 	//write("/", (char*)&d, sizeof(d), 0);
 	//readdir("/");
 	//mknod("/two.txt", 755);

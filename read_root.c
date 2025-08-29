@@ -34,7 +34,7 @@ main(int argc, char *argv[])
 	//tree_lookup("/dir/dir");
 	
 	//readdir("/");	// Empty
-	//mknod("/hello.txt", 755);
+	mknod("/hello.txt", 755);
 	//write("/hello.txt", "hello!", 6, 0);
 	//write("/hello.txt", "hello!", 6, 6);
 	//write("/hello.txt", "hello!", 6, 12);

@@ -86,30 +86,15 @@ mknod(const char *path, int mode)
 	int rv = 0;
 	char *ppath = split(path, count_l(path)-1);
 	int l = inode_find(ppath);
+	inode *dd = get_inode(l);
 	
-	inode *n = get_inode(l);
+	int inum = alloc_inode(path);
+	inode fn;
+	memcpy((char*)&fn, (char*)get_inode(inum), sizeof(inode));
+	fn.mode=mode;
+	memcpy((char*)get_inode(inum), (char*)&fn, sizeof(inode));
 	
-	dirent hd;
-	dirent d;
-	strncpy(d.name, path, DIR_NAME);
-	d.inum = n->inum;
-	
-	int p = 0;
-	
-	while (true) {
-		read(ppath, (char*)&hd, sizeof(dirent), p*sizeof(dirent));
-		p++;
-		if (hd.next==NULL) {
-			hd.next=&d;
-			write(ppath, (char*)&hd, sizeof(dirent), (p-1)*sizeof(dirent));
-			break;
-		}
-	}
-	
-	write(ppath, (char*)&d, sizeof(dirent), p*sizeof(dirent));
-	free(ppath);
-	
-	n->mode=mode;
+	directory_put(dd, path, inum);
 
 	printf("mknod(%s) -> %d\n", path, rv);
 	return rv;

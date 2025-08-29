@@ -21,49 +21,6 @@
 #include "bitmap.h"
 #include "nufs.h"
 
-dirent nul;
-
-/*int inode_size(inode *d)
-{
-	return (d->size[0]+d->size[1]);
-}
-
-int calc_offset(inode *d, off_t offset)
-{
-	if (d->size[0]!=0) offset-=d->size[0];
-	else return offset;
-	if (d->size[1]==0) return offset;
-	else offset-=d->size[0];
-	if (offset > 0 && d->iptr!=0) {
-		d = get_inode(d->iptr);
-		return calc_offset(d, offset);
-	} else {
-		//d->iptr = alloc_inode();	// Inode_find()?
-		//d = get_inode(d->iptr);
-		if (offset == 0) return 0;
-		return -1;
-	}
-}
-
-int _remainder(inode *d, int size, off_t offset)
-{
-	if (d->size[0]==0) return 0;
-	else if (d->size[1]==0) return 0;
-	else {
-		return (size - ((d->size[0]+d->size[1]) - offset));
-	}
-}
-
-char* get_data_end()
-{
-	return (char*)get_root_start() + get_inode(1)->ptrs[0];
-}
-
-bool is_empty(inode *d)
-{
-	return (d->size[0]==0 || d->size[1]==0);
-}*/
-
 int split(const char *path, int n, char buf[DIR_NAME]) {
 	int rv=0;
 	if (n==0) {
@@ -124,29 +81,11 @@ char *get_data(int offset)
 	return ((char*)get_root_start()+offset);
 }
 
-/*int
-count_placement(int l, const char* path, const char *ppath)
-{
-	inode *d = get_inode(l);
-	int i=0;
-	dirent *e;
-	while (true) {
-		e = (dirent*)get_data(d->ptrs[0]);
-		if (( ( d->size[0]==0 ) ) ) break;
-		i++;
-		e = (dirent*)get_data(d->ptrs[1]);
-		if ((d->size[1]==0) ) break;
-		i++;
-		d = (d == 0) ? get_inode( (d->iptr = inode_find(ppath)) ) : get_inode(d->iptr);
-	}
-	return i;
-}*/
-
 // implementation for: man 2 access
 // Checks if a file exists.
 int
 nufs_access(const char *path, int mask)
-{	//if (!strcmp(path, "/")) return rv;
+{
     int rv = 0;
     int l = tree_lookup(path);
     rv = (l>-1) ? F_OK : -ENOENT;
@@ -160,26 +99,18 @@ int
 nufs_mknod(const char *path, mode_t mode, dev_t rdev)
 {
 	int rv = 0;
-	int l = (!strcmp(path, "/")) ? 0 : inode_find(path);
-	char *ppath = parent_path(path);
+	char *ppath = split(path, count_l(path)-1);
+	int l = inode_find(ppath);
+	inode *dd = get_inode(l);
 	
-	dirent e;
-	inode *h = get_inode(tree_lookup(ppath));
-	inode *n = get_inode(l);
-	n->mode=mode;
+	int inum = alloc_inode(path);
+	inode fn;
+	memcpy((char*)&fn, (char*)get_inode(inum), sizeof(inode));
+	fn.mode=mode;
+	memcpy((char*)get_inode(inum), (char*)&fn, sizeof(inode));
 	
-	strncpy(e.name, path, DIR_NAME);
-	e.inum = l;
-	e.active = true;
-	
-	//int i = count_placement(l, path, ppath);
-	
-	//printf("count_placement = %d\n", i);
-	
-	//nufs_write(ppath, (char*)&e, sizeof(dirent), i*sizeof(dirent), 0);
-	
+	directory_put(dd, path, inum);
 
-	free(ppath);
 	printf("mknod(%s) -> %d\n", path, rv);
 	return rv;
 }
@@ -429,65 +360,12 @@ nufs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_fi
 	return _read(path, buf, size, offset, l);
 }
 
-/*int
-write_sp(char *data, int inode, int ptr, const char *buf, size_t size)
-{
-	struct inode n; // *get_inode(inode);
-	memcpy(&n, get_inode(inode), sizeof(n));
-	struct inode h; // *get_inode(1);
-	memcpy(&h, get_inode(1), sizeof(n));
-	memcpy(buf, data, size);
-	data[size] = '\0';
-	n.size[ptr]=size;
-	printf("ptr = %d\n", ptr);
-	n.ptrs[ptr] = h.ptrs[0];
-	h.ptrs[0] += size;
-	memcpy(get_inode(inode), &n, sizeof(n));
-	memcpy(get_inode(1), &h, sizeof(h));
-}*/
-
-int
-_write(const char *path, const char *buf, size_t size, off_t offset, int l)
-{
-	/*int rv = 0;
-	(l == 0) ? l = tree_lookup(path) : l;
-	inode *n = get_inode(l), *h = get_inode(1);
-	
-	int s = inode_size(n);
-	
-	if (s == 0) write_sp(get_data_end()+offset, l, 0, buf, size);
-	else if (is_empty(n)) write_sp(get_data_end()+offset-s, l, 1, buf, size);
-	else {
-		int r = _remainder(n, size, offset);
-		if (r<=0) {
-			if (offset < n->size[0]) {
-				printf("writing to first pointer...");
-				write_sp(get_data(n->ptrs[0]+offset), l, 0, buf, n->size[0]-offset);
-				size-=n->size[0];
-			}
-			if (size > 0) {
-				printf("writing to second pointer...");
-				write_sp(get_data(n->ptrs[1]+(offset-n->size[0])), l, 1, buf, size );
-			}
-		}
-		else {
-			if (n->iptr == 0) n->iptr = inode_find(path);
-			if (_remainder(n, size, offset) >= size) {
-				return _write(path, buf, (size), (_remainder(n, size, offset) - size), n->iptr);
-			}
-			else
-				return _write(path, buf, (size - _remainder(n, size, offset)), (0), n->iptr);
-		}
-	}*/
-	//printf("write(%s, %ld bytes, @+%ld) -> %d\n", path, size, offset, rv);
-	//return rv;
-}
-
 // Actually write data
 int
 nufs_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi)
 {
-	return _write(path, buf, size, offset, 0);
+	//printf("write(%s, %ld bytes, @+%ld) -> %d\n", path, size, offset, rv);
+	//return rv;
 }
 
 // Update the timestamps on a file or directory.

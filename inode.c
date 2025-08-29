@@ -32,14 +32,11 @@ alloc_inode(const char *path) {
 	char *hpath;
 	static char str[DIR_NAME];
 	void* ibm = get_inode_bitmap();
-	if (!strcmp(path, "/")) {	// TODO: Get rid of this, it limits our root to only having two pointers....
-		bitmap_put(ibm, 0, 1);
-		return 0;
-	} /*else if (bitmap_get(ibm, hash(path))==1) {	// TODO: Fix this! We need the feature, but it is overflowing the stack...
+	if (bitmap_get(ibm, hash(path))==1 || hash(path)==1 || hash(path)==0) {	// TODO: Fix this! We need the feature, but it is overflowing the stack...
 		strncpy(str, path, DIR_NAME);
 		str[strlen(path)-1] = hash(path);
 		return alloc_inode(str);
-	}*/ else {
+	} else {
 		bitmap_put(ibm, hash(path), 1);
 		return hash(path);
 	}
@@ -47,4 +44,7 @@ alloc_inode(const char *path) {
 //void free_inode() {}
 //int grow_inode(inode* node, int size) {}
 //int shrink_inode(inode* node, int size) {}
-//int inode_get_pnum(inode* node, int fpn) {}
+int inode_get_pnum(inode* node, int fpn)
+{
+	return node->ptrs[fpn];
+}
