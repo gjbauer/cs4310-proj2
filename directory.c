@@ -11,9 +11,10 @@ int directory_lookup(inode* dd, const char* name)
 	inode *ptr = dd;
 	dirent file;
 	
-	for (;;) {	// TODO: Exit condition
+	for (;;) {
 		memcpy((char*)&file, get_data(ptr->ptrs[i%2]), sizeof(dirent));
 		if (!strncmp(file.name, path, DIR_NAME)) return file.inum;
+		if (file.next==NULL) break;
 		if ( (i%2) == 0 ) ptr = get_inode(ptr->iptr);
 	}
 }
@@ -27,7 +28,7 @@ int tree_lookup(const char* path) {
 	
 	int level = count_l(path);
 	
-	printf("Level of file in directory structure: %d\n", level);
+	//printf("Level of file in directory structure: %d\n", level);
 	
 	ptr = root;
 	
@@ -47,7 +48,7 @@ int tree_lookup(const char* path) {
 		if ( (i%2) == 0 ) ptr = get_inode(ptr->iptr);
 	}
 	
-	printf("searching for main file...\n");
+	//printf("searching for main file...\n");
 	
 	for (int i=0; i<500; i++) {
 		if (i % 2 == 0 && i > 0 ) {
@@ -57,12 +58,12 @@ int tree_lookup(const char* path) {
 		//printf("current search target: %s\n", path);
 		memcpy((char*)&file, get_data(ptr->ptrs[i%2]), sizeof(dirent));
 		if (!strncmp(path, file.name, DIR_NAME)) {
-			printf("returning inum %d\n", file.inum);
+			//printf("returning inum %d\n", file.inum);
 			return file.inum;
 		}
 	}
 
-	printf("returning -ENOENT\n");
+	//printf("returning -ENOENT\n");
 	return -ENOENT;
 }
 int directory_put(inode* dd, const char* name, int inum)
@@ -83,6 +84,21 @@ int directory_delete(inode* dd, const char* name)
 slist* directory_list(const char* path)
 {
 	// TODO: Implement a function which lists all files in a directory in an slist
+	int inum = tree_lookup(path);
+	inode *ptr = get_inode(inum);;
+	dirent file;
+	
+	slist dirlist = malloc(2 * DIR_NAME * sizeof(char));
+	
+	for (int i=0;; i++) {
+		memcpy((char*)&file, get_data(ptr->ptrs[i%2]), sizeof(dirent));
+		if (i % 2 == 0)
+		{
+			// TODO: Grow our dynamic array
+		}
+		if (file.next==NULL) break;
+		if ( (i%2) == 0 ) ptr = get_inode(ptr->iptr);
+	}
 }
 
 slist* directory_list(const char* path)
