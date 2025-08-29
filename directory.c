@@ -11,11 +11,24 @@ int directory_lookup(inode* dd, const char* name)
 	inode *ptr = dd;
 	dirent *file = (dirent*)pages_get_page(ptr->ptrs[0]+5);	// Data pages start at 5
 	
-	for (int i=0;;i++) {
-		if (!strncmp(file->name, name, DIR_NAME)) return file->inum;
+	for (int count=0;;count++) {
+		if (!strncmp(file->name, name, DIR_NAME))
+		{
+			printf("returning inum : %d\n", file->inum);
+			return file->inum;
+		}
 		if (file->next==false) break;
-		if ( (i%2) == 0 ) ptr = get_inode(ptr->iptr);
+		else if ( count == 4096/sizeof(dirent) ) file = (dirent*)pages_get_page(ptr->ptrs[1]+5);	// Data pages start at 5
+		else if ( count == 8192/sizeof(dirent) ) {
+			count = 0;
+			ptr = get_inode(ptr->iptr);
+		}
+		else file++;
 	}
+	
+	printf("returning -ENOENT\n");
+	
+	return -ENOENT;
 }
 
 int tree_lookup(const char* path) {
@@ -38,33 +51,14 @@ int tree_lookup(const char* path) {
 		printf("current file: %s\n", file->name);
 		//printf("inum: %d\n", ptr->inum);
 		//printf("i % 2: %d\n", i%2);
-		if (!strcmp(file->name, split(path, i))) {
-			
-			ptr = get_inode(file->inum);
-			
-			break;
-		}
-		if (file->next==true) file++;
-		//if ( (i%2) == 0 ) ptr = get_inode(ptr->iptr);
+		int inum = directory_lookup(ptr, split(path, i));
+		if (inum == -ENOENT) return -ENOENT;
+		ptr = get_inode(inum);
 	}
 	
-	//printf("searching for main file...\n");
+	printf("searching for main file...\n");
 	
-	/*for (int i=0; i<500; i++) {
-		if (i % 2 == 0 && i > 0 ) {
-			ptr = get_inode(ptr->iptr);
-		}
-		//printf("current file: %s\n", file.name);
-		//printf("current search target: %s\n", path);
-		file++;
-		if (!strncmp(path, file->name, DIR_NAME)) {
-			//printf("returning inum %d\n", file.inum);
-			return file->inum;
-		}
-	}*/
-
-	//printf("returning -ENOENT\n");
-	return -ENOENT;
+	return directory_lookup(ptr, path);
 }
 int directory_put(inode* dd, const char* name, int inum)
 {
