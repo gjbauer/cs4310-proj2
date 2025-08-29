@@ -12,11 +12,7 @@ int directory_lookup(inode* dd, const char* name)
 	dirent *file = (dirent*)pages_get_page(ptr->ptrs[0]+5);	// Data pages start at 5
 	
 	for (int count=0;;count++) {
-		if (!strncmp(file->name, name, DIR_NAME))
-		{
-			printf("returning inum : %d\n", file->inum);
-			return file->inum;
-		}
+		if (!strncmp(file->name, name, DIR_NAME)) return file->inum;
 		if (file->next==false) break;
 		else if ( count == 4096/sizeof(dirent) ) file = (dirent*)pages_get_page(ptr->ptrs[1]+5);	// Data pages start at 5
 		else if ( count == 8192/sizeof(dirent) ) {
@@ -26,37 +22,20 @@ int directory_lookup(inode* dd, const char* name)
 		else file++;
 	}
 	
-	printf("returning -ENOENT\n");
-	
 	return -ENOENT;
 }
 
 int tree_lookup(const char* path) {
-	// TODO: Rewrite this again more or less from scratch
 	inode *root = get_inode(0);
-	
-	inode *ptr;
-	
-	ptr = root;
-	
+	inode *ptr = root;
 	dirent *file = (dirent*)pages_get_page(ptr->ptrs[0]+5);	// Data pages start at 5
-	
 	int level = count_l(path);
 	
-	//printf("Level of file in directory structure: %d\n", level);
-	
-	
 	for (int i=0; i<level; i++) {
-		//printf("current search target: %s\n", split(path, i));
-		printf("current file: %s\n", file->name);
-		//printf("inum: %d\n", ptr->inum);
-		//printf("i % 2: %d\n", i%2);
 		int inum = directory_lookup(ptr, split(path, i));
 		if (inum == -ENOENT) return -ENOENT;
 		ptr = get_inode(inum);
 	}
-	
-	printf("searching for main file...\n");
 	
 	return directory_lookup(ptr, path);
 }
@@ -100,7 +79,6 @@ slist* directory_list(const char* path)
 	int inum = tree_lookup(path);
 	inode *ptr = get_inode(inum);
 	dirent *file = (dirent*)pages_get_page(ptr->ptrs[0]+5);	// Data pages start at 5
-	
 	slist *dirlist;
 	char *data = (char*)malloc(2 * (DIR_NAME+1) * sizeof(char));	// DIR_NAME+1 to include our delimiter ;)
 	
