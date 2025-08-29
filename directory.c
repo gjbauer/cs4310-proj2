@@ -9,12 +9,11 @@
 int directory_lookup(inode* dd, const char* name)
 {
 	inode *ptr = dd;
-	dirent file;
+	dirent *file = (dirent*)pages_get_page(ptr->ptrs[0]+5);	// Data pages start at 5
 	
 	for (int i=0;;i++) {
-		memcpy((char*)&file, get_data(ptr->ptrs[i%2]), sizeof(dirent));
-		if (!strncmp(file.name, name, DIR_NAME)) return file.inum;
-		//if (file.next==NULL) break;
+		if (!strncmp(file->name, name, DIR_NAME)) return file->inum;
+		if (file->next==false) break;
 		if ( (i%2) == 0 ) ptr = get_inode(ptr->iptr);
 	}
 }
