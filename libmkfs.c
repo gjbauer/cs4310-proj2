@@ -15,6 +15,7 @@ mkfs() {
 	strcpy(root.name, "/");
 	root.inum = 0;
 	root.next==NULL;
+	root.parent==NULL;
 	inode root_node;
 	root_node.ptrs[0]=0;
 	root_node.size[0]=sizeof(dirent);

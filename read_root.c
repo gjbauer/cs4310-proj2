@@ -22,6 +22,14 @@ main(int argc, char *argv[])
 	
 	printf("slist : %s\n", data->data);
 	
+	data = data->next;
+	
+	printf("slist : %s\n", data->data);
+	
+	data = data->next;
+	
+	printf("slist : %s\n", data->data);
+	
 	//tree_lookup("/");
 	
 	//tree_lookup("/dir/dir");
