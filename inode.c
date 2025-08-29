@@ -6,7 +6,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
+
 //void print_inode(inode* node) {}
+
 inode* get_inode(int inum) {
 	// TODO: Return a specific inode given a number...
 	void *ptr = get_inode_start();
@@ -30,7 +32,7 @@ alloc_inode(const char *path) {
 	char *hpath;
 	static char str[DIR_NAME];
 	void* ibm = get_inode_bitmap();
-	if (!strcmp(path, "/")) {
+	if (!strcmp(path, "/")) {	// TODO: Get rid of this, it limits our root to only having two pointers....
 		bitmap_put(ibm, 0, 1);
 		return 0;
 	} /*else if (bitmap_get(ibm, hash(path))==1) {	// TODO: Fix this! We need the feature, but it is overflowing the stack...

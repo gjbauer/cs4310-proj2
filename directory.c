@@ -11,9 +11,9 @@ int directory_lookup(inode* dd, const char* name)
 	inode *ptr = dd;
 	dirent file;
 	
-	for (;;) {
+	for (int i=0;;i++) {
 		memcpy((char*)&file, get_data(ptr->ptrs[i%2]), sizeof(dirent));
-		if (!strncmp(file.name, path, DIR_NAME)) return file.inum;
+		if (!strncmp(file.name, name, DIR_NAME)) return file.inum;
 		if (file.next==NULL) break;
 		if ( (i%2) == 0 ) ptr = get_inode(ptr->iptr);
 	}
@@ -88,8 +88,8 @@ slist* directory_list(const char* path)
 	inode *ptr = get_inode(inum);;
 	dirent file;
 	
-	slist dirlist;
-	dirlist.data = (char*)malloc(2 * (DIR_NAME+1) * sizeof(char));	// DIR_NAME+1 to include our delimiter ;)
+	slist *dirlist = (slist*)malloc(sizeof(slist));
+	dirlist->data = (char*)malloc(2 * (DIR_NAME+1) * sizeof(char));	// DIR_NAME+1 to include our delimiter ;)
 	
 	for (int i=0;; i++) {
 		memcpy((char*)&file, get_data(ptr->ptrs[i%2]), sizeof(dirent));
@@ -97,15 +97,16 @@ slist* directory_list(const char* path)
 		{
 			// TODO: Grow our dynamic array
 			char *data = (char*)malloc(i * (DIR_NAME+1) * sizeof(char));
-			strncpy(data, dirlist.data, i * (DIR_NAME+1));
-			free(dirlist.data);
-			dirlist.data = (char*)malloc(i+2 * (DIR_NAME+1) * sizeof(char))
+			strncpy(data, dirlist->data, i * (DIR_NAME+1));
+			free(dirlist->data);
+			dirlist->data = (char*)malloc(i+2 * (DIR_NAME+1) * sizeof(char));
 		}
-		strncat(dirlist.data, file.name, DIR_NAME);
-		strncat(dirlist.data, "", 1); // TODO: Choose a delimiter...I think a semicolon ( ; ) will work...
+		strncat(dirlist->data, file.name, DIR_NAME);
+		strncat(dirlist->data, ";", 1); // TODO: Choose a delimiter...I think a semicolon ( ; ) will work...
 		if (file.next==NULL) break;
 		if ( (i%2) == 0 ) ptr = get_inode(ptr->iptr);
 	}
+	return dirlist;
 }
 
 void print_directory(inode* dd)

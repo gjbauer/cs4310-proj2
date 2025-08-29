@@ -210,9 +210,9 @@ _write(const char *path, const char *buf, size_t size, off_t offset, int l)
 	
 	inode *file = get_inode(l), *open_data = get_inode(1);
 	
-	int s = inode_size(n);
+	//int s = inode_size(n);
 	
-	if ( n->size[0]==0 || n->size[1]==0 ) {
+	/*if ( n->size[0]==0 || n->size[1]==0 ) {
 		// TODO: Inode with pointers not already written....do some stuff?
 	}
 	

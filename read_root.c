@@ -8,6 +8,7 @@
 #include "directory.h"
 #include "mkfs.h"
 #include "mfs.h"
+#include "slist.h"
 
 int
 main(int argc, char *argv[])
@@ -15,12 +16,18 @@ main(int argc, char *argv[])
 	char buf[256];
 	storage_init("data.nufs");
 	
+	slist *data;
+	
+	data = s_split("/;/foo;/bar", ';');
+	
+	printf("slist : %s\n", data->data);
+	
 	//tree_lookup("/");
 	
 	//tree_lookup("/dir/dir");
 	
 	//readdir("/");	// Empty
-	mknod("/hello.txt", 755);
+	//mknod("/hello.txt", 755);
 	//write("/hello.txt", "hello!", 6, 0);
 	//write("/hello.txt", "hello!", 6, 6);
 	//write("/hello.txt", "hello!", 6, 12);
@@ -33,7 +40,7 @@ main(int argc, char *argv[])
 	/*read("/hello.txt", buf, 24, 0);	// < focus here...
 	printf("%s\n", buf);*/
 	
-	readdir("/");
+	//readdir("/");
 	
 	//mknod("/dir", 755);
 	
