@@ -57,6 +57,7 @@ int directory_put(inode* dd, const char* name, int inum)
 			dd = get_inode(dd->iptr);
 		}
 		else if (ptr->next == false ) {
+			ptr->next=true;
 			ptr++;
 			break;
 		}

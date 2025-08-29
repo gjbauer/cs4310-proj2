@@ -21,21 +21,6 @@
 #include "bitmap.h"
 #include "nufs.h"
 
-int split(const char *path, int n, char buf[DIR_NAME]) {
-	int rv=0;
-	if (n==0) {
-		strcpy(buf, "/");
-	} else {
-		int c=0, i=0;
-		for (; path[i] && c<n+1; i++) {
-			buf[i]=path[i];
-			if (path[i]=='/') c++;
-		}
-		if (buf[i-1]=='/') buf[i-1]='\0';
-	}
-	return rv;
-}
-
 int
 count_l(const char *path) {
 	int c=0;
@@ -52,7 +37,7 @@ find_parent(const char *path)
 	int k = count_l(path);
 	int n=0;
 	for (int i=0; i<k; i++) {
-		split(path, i, ptr);
+		//split(path, i, ptr);
 		n = tree_lookup(ptr);
 		if (n<0) return -ENOENT;
 	}
@@ -68,7 +53,7 @@ parent_path(const char *path)
 	int k = count_l(path);
 	int n=0;
 	for (int i=0; i<k; i++) {
-		split(path, i, ptr);
+		//split(path, i, ptr);
 	}
 	
 	char *m = (char*)malloc(DIR_NAME * sizeof(char));
@@ -99,7 +84,7 @@ int
 nufs_mknod(const char *path, mode_t mode, dev_t rdev)
 {
 	int rv = 0;
-	char *ppath = split(path, count_l(path)-1);
+	char *ppath; //= split(path, count_l(path)-1);
 	int l = inode_find(ppath);
 	inode *dd = get_inode(l);
 	
@@ -280,7 +265,7 @@ int
 nufs_rename(const char *from, const char *to) {
     int l = tree_lookup(from);
     int rv;
-    nul.active=false;
+    //nul.active=false;
     if (!(rv = (l>0) ? 0 : -ENOENT)) {
         size_t* count = (size_t*)get_root_start();
         dirent *f = (dirent*)get_root_start() + 1;
@@ -291,7 +276,7 @@ nufs_rename(const char *from, const char *to) {
         t->inum = l;
         t->active=true;
         *count = *count + 1;
-        memcpy(f, &nul, sizeof(nul));
+        //memcpy(f, &nul, sizeof(nul));
     }
     printf("rename(%s => %s) -> %d\n", from, to, rv);
     return rv;
