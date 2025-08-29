@@ -14,7 +14,7 @@ mkfs() {
 	dirent root;
 	strcpy(root.name, "/");
 	root.inum = 0;
-	root.next==NULL;
+	root.next==false;
 	root.parent==NULL;
 	inode root_node;
 	root_node.ptrs[0]=0;

@@ -20,7 +20,7 @@ typedef struct dirent {
     char type;
     bool active;
     struct dirent *parent;
-    struct dirent *next;
+    bool next;
     //char _reserved[11];
 } dirent;
 
