@@ -6,6 +6,18 @@
 #include <stdlib.h>
 #include <errno.h>
 
+int directory_lookup(inode* dd, const char* name)
+{
+	inode *ptr = dd;
+	dirent file;
+	
+	for (;;) {	// TODO: Exit condition
+		memcpy((char*)&file, get_data(ptr->ptrs[i%2]), sizeof(dirent));
+		if (!strncmp(file.name, path, DIR_NAME)) return file.inum;
+		if ( (i%2) == 0 ) ptr = get_inode(ptr->iptr);
+	}
+}
+
 int tree_lookup(const char* path) {
 	inode *root = get_inode(0);
 	
@@ -53,17 +65,29 @@ int tree_lookup(const char* path) {
 	printf("returning -ENOENT\n");
 	return -ENOENT;
 }
-int directory_put(inode* dd, const char* name, int inum) {
-	/*dirent* d = malloc(sizeof(dirent*));
-	strcpy(d->name, name);
-	d->inum = inum;
-	dirent *ent = (dirent*)get_root_start();
-	while (ent) {
-		if (ent->active==false) break;
-		else *ent++;
-	}
-	if (!ent) return -1;
-	memcpy(ent, &d, sizeof(d));*/
+int directory_put(inode* dd, const char* name, int inum)
+{
+	// Setup file
+	dirent file;
+	strncpy(file.name, name, DIR_NAME);
+	file.inum = inum;
+	
 	return 0;
 }
+
+int directory_delete(inode* dd, const char* name)
+{
+	// TODO: Delete function
+}
+
+slist* directory_list(const char* path)
+{
+	// TODO: Implement a function which lists all files in a directory in an slist
+}
+
+slist* directory_list(const char* path)
+{
+	// TODO: Implement a function which prints the files in a directory to stdout
+}
+
 
