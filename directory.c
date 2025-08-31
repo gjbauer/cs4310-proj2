@@ -48,6 +48,7 @@ int directory_put(inode* dd, const char* name, int inum)
 	file.active = true;
 	
 	dirent *ptr = (dirent*)pages_get_page(dd->ptrs[0]+5);
+	printf("page : %d\n", dd->ptrs[0]+5);
 	
 	for (int count=0 ;; count++)
 	{

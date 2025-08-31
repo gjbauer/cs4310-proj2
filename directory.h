@@ -5,9 +5,6 @@
 
 #define DIR_NAME 48
 
-#define FILE 'F'
-#define DIRECTORY 'D'
-
 #include "slist.h"
 #include "pages.h"
 #include "inode.h"
@@ -23,7 +20,7 @@ typedef struct dirent {
 } dirent;
 
 //void directory_init();
-//int directory_lookup(inode* dd, const char* name);
+int directory_lookup(inode* dd, const char* name);
 int tree_lookup(const char* path);
 int directory_put(inode* dd, const char* name, int inum);
 //int directory_delete(inode* dd, const char* name);

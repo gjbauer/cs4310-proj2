@@ -38,6 +38,10 @@ alloc_inode(const char *path) {
 		return alloc_inode(str);
 	} else {
 		bitmap_put(ibm, hash(path), 1);
+		inode dd;
+		memcpy((char*)&dd, (char*)get_inode(hash(path)), sizeof(inode));
+		dd.ptrs[0]=alloc_page();
+		memcpy((char*)get_inode(hash(path)), (char*)&dd, sizeof(inode));
 		return hash(path);
 	}
 }

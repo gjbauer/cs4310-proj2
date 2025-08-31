@@ -85,7 +85,9 @@ mknod(const char *path, int mode)
 {
 	int rv = 0;
 	char *ppath = split(path, count_l(path)-1);
-	int l = inode_find(ppath);
+	int l = tree_lookup(ppath);
+	printf("ppath : %s\n", ppath);
+	printf("inode : %d\n", l);
 	inode *dd = get_inode(l);
 	
 	int inum = alloc_inode(path);
