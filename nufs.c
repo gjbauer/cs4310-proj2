@@ -21,52 +21,6 @@
 #include "bitmap.h"
 #include "nufs.h"
 
-// implementation for: man 2 access
-// Checks if a file exists.
-int
-nufs_access(const char *path, int mask)
-{
-    int rv = 0;
-    int l = tree_lookup(path);
-    rv = (l>-1) ? F_OK : -ENOENT;
-    printf("access(%s, %04o) -> %d\n", path, mask, rv);
-    return rv;
-}
-
-// mknod makes a filesystem object like a file or directory
-// called for: man 2 open, man 2 link
-int
-nufs_mknod(const char *path, mode_t mode, dev_t rdev)
-{
-	int rv = 0;
-	char *ppath; //= split(path, count_l(path)-1);
-	int l = inode_find(ppath);
-	inode *dd = get_inode(l);
-	
-	int inum = alloc_inode(path);
-	inode fn;
-	memcpy((char*)&fn, (char*)get_inode(inum), sizeof(inode));
-	fn.mode=mode;
-	memcpy((char*)get_inode(inum), (char*)&fn, sizeof(inode));
-	
-	directory_put(dd, path, inum);
-
-	printf("mknod(%s) -> %d\n", path, rv);
-	return rv;
-}
-
-int
-nufs_create(const char *path, mode_t mode, struct fuse_file_info *fi) {
-	if (nufs_mknod(path, mode, 0)) {
-    		int l = tree_lookup(path);
-    		inode *n = get_inode(l);
-        	n->mode = mode; // regular file
-        	//n->size[0] = 0;
-        	//n->size[1] = 0;
-        	return l;
-	} else return -1;
-}
-
 bool
 isnum(const char *path)
 {
@@ -78,68 +32,37 @@ isnum(const char *path)
 	return true;
 }
 
+// implementation for: man 2 access
+// Checks if a file exists.
+int
+nufs_access(const char *path, int mask)
+{
+    int rv = 0;
+    printf("access(%s, %04o) -> %d\n", path, mask, rv);
+    return rv;
+}
+
 // implementation for: man 2 stat
 // gets an object's attributes (type, permissions, size, etc)
 int
 nufs_getattr(const char *path, struct stat *st)
-// What I hate about this is how it will now create a file for each one that is tests exists...not very great of average UX
 {
     int rv = 0;
-    int l = tree_lookup(path);
-    inode *n;
     if (strcmp(path, "/") == 0) {
         st->st_mode = 040755; // directory
         st->st_size = 0;
         st->st_uid = getuid();
     }
-    else if (l>-1) {
-    	if (st) {
-    		n = get_inode(l);
-        	st->st_mode = n->mode; // regular file
-        	st->st_size = n->size;	// TODO : This should be a function which calculates size from the inodes..
-        	st->st_uid = getuid();
-        }
-    }
-    else if (!strcmp(path, "/one.txt") || !strcmp(path, "/two.txt") || !strcmp(path, "/2k.txt") || !strcmp(path, "/40k.txt") || isnum(path)) {
-    	l = nufs_create(path, 0100644, 0);
+    else if (strcmp(path, "/hello.txt") == 0) {
+        st->st_mode = 0100644; // regular file
+        st->st_size = 6;
+        st->st_uid = getuid();
     }
     else {
-    	rv = -ENOENT;
+        rv = -1;
     }
-    if (st) printf("getattr(%s) -> (%d) {mode: %04o, size: %ld}\n", path, rv, st->st_mode, st->st_size);
-    else printf("getattr(%s) -> (%d)\n", path, rv);
+    printf("getattr(%s) -> (%d) {mode: %04o, size: %ld}\n", path, rv, st->st_mode, st->st_size);
     return rv;
-}
-
-int
-_readdir(const char *path, void *buf, fuse_fill_dir_t filler, int l)
-{
-	struct stat st;
-	int rv=0;
-	(l == 0) ? (l = tree_lookup(path)) : l;
-	inode *a = get_inode(l);
-	dirent e;
-	
-	//memcpy(&e, get_data(a->ptrs[0]), sizeof(e));
-	if (e.active==true) return 0;
-	rv = nufs_getattr(e.name, &st);
-	printf("e.name = %c\n", e.name);
-	assert(rv == 0);
-	filler(buf, e.name, &st, 0);
-	printf("%s\n", e.name);	// getaddr
-	rv++;
-	
-	//memcpy(&e, get_data(a->ptrs[1]), sizeof(e));
-	if (!strcmp(e.name, "") || a->ptrs[1]==0) return 0;
-	rv = nufs_getattr(e.name, &st);
-	assert(rv == 0);
-	filler(buf, e.name, &st, 0);
-	printf("%s\n", e.name);	// getaddr
-	rv++;
-	
-	int ptr = a->iptr;
-	rv = (ptr==0) ? (rv) : rv+_readdir(path, buf, filler, ptr);
-	return rv;
 }
 
 // implementation for: man 2 readdir
@@ -148,9 +71,30 @@ int
 nufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
              off_t offset, struct fuse_file_info *fi)
 {
-	int rv=_readdir(path, buf, filler, 0);
-	printf("readdir(%d)\n", rv);
-	return rv;
+    struct stat st;
+    int rv;
+
+    rv = nufs_getattr("/", &st);
+    assert(rv == 0);
+
+    filler(buf, ".", &st, 0);
+
+    rv = nufs_getattr("/hello.txt", &st);
+    assert(rv == 0);
+    filler(buf, "hello.txt", &st, 0);
+
+    printf("readdir(%s) -> %d\n", path, rv);
+    return 0;
+}
+
+// mknod makes a filesystem object like a file or directory
+// called for: man 2 open, man 2 link
+int
+nufs_mknod(const char *path, mode_t mode, dev_t rdev)
+{
+    int rv = -1;
+    printf("mknod(%s, %04o) -> %d\n", path, mode, rv);
+    return rv;
 }
 
 // most of the following callbacks implement
@@ -158,31 +102,15 @@ nufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 int
 nufs_mkdir(const char *path, mode_t mode)
 {
-    	int rv = nufs_mknod(path, mode | 040000, 0);
-	printf("mkdir(%s) -> %d\n", path, rv);
-	return rv;
+    int rv = nufs_mknod(path, mode | 040000, 0);
+    printf("mkdir(%s) -> %d\n", path, rv);
+    return rv;
 }
 
 int
 nufs_unlink(const char *path)
 {
     int rv = -1;
-    int l = tree_lookup(path);
-    if (l<0) return -ENOENT;
-    /*size_t* count = (size_t*)get_root_start();
-    dirent *ent = (dirent*)get_root_start()+1;
-    nul.active=false;
-    void* bm = get_inode_bitmap();
-    for (int i=0; i<*count; i++) {
-    	rv = nufs_getattr(ent->name, 0);
-    	assert(rv == 0);
-    	if (!strcmp(ent->name, path)) {
-    		bitmap_put(bm, l, 0);
-    		memcpy(ent, &nul, sizeof(nul));
-    		return rv;
-    	}
-	*ent++;
-    }*/
     printf("unlink(%s) -> %d\n", path, rv);
     return rv;
 }
@@ -190,17 +118,7 @@ nufs_unlink(const char *path)
 int
 nufs_link(const char *from, const char *to)
 {
-    int rv = 0;
-    /*int l = tree_lookup(from);
-    inode *n = get_inode(l);
-    size_t* count = (size_t*)get_root_start();
-    dirent *nod = (dirent*)get_root_start() + 1;
-    for (int i=0; i<*count; i++, *nod++);
-    strcpy(nod->name, to);
-    nod->inum = l;
-    nod->active=true;
-    *count = *count + 1;
-    n->mode = 0100644;*/
+    int rv = -1;
     printf("link(%s => %s) -> %d\n", from, to, rv);
 	return rv;
 }
@@ -209,7 +127,6 @@ int
 nufs_rmdir(const char *path)
 {
     int rv = -1;
-    rv = nufs_unlink(path);
     printf("rmdir(%s) -> %d\n", path, rv);
     return rv;
 }
@@ -217,22 +134,9 @@ nufs_rmdir(const char *path)
 // implements: man 2 rename
 // called to move a file within the same filesystem
 int
-nufs_rename(const char *from, const char *to) {
-    int l = tree_lookup(from);
-    int rv;
-    //nul.active=false;
-    if (!(rv = (l>0) ? 0 : -ENOENT)) {
-        size_t* count = (size_t*)get_root_start();
-        dirent *f = (dirent*)get_root_start() + 1;
-        dirent *t = (dirent*)get_root_start() + 1;
-        for (int i=0; i<*count && strcmp(f->name, from); i++, *f++);
-        for (int i=0; i<*count && strcmp(t->name, to); i++, *t++);
-        strcpy(t->name, to);
-        t->inum = l;
-        t->active=true;
-        *count = *count + 1;
-        //memcpy(f, &nul, sizeof(nul));
-    }
+nufs_rename(const char *from, const char *to)
+{
+    int rv = -1;
     printf("rename(%s => %s) -> %d\n", from, to, rv);
     return rv;
 }
@@ -248,8 +152,7 @@ nufs_chmod(const char *path, mode_t mode)
 int
 nufs_truncate(const char *path, off_t size)
 {
-    int rv = 0;
-    //int l = tree_lookup(path
+    int rv = -1;
     printf("truncate(%s, %ld bytes) -> %d\n", path, size, rv);
     return rv;
 }
@@ -261,51 +164,27 @@ int
 nufs_open(const char *path, struct fuse_file_info *fi)
 {
     int rv = 0;
-    int k = nufs_access(path, 0);
-    if (k==-ENOENT) k = nufs_create(path, 0100644, 0);
     printf("open(%s) -> %d\n", path, rv);
     return rv;
-}
-
-int
-_read(const char *path, const char *buf, size_t size, off_t offset, int l)
-{
-	/*(l == 0) ? l = tree_lookup(path) : l;
-	inode *n = get_inode(l);
-	
-	int r = ( size - (n->size[0]+n->size[1]) );
-	// TODO : Reads larger than a single inode...
-	
-	if (offset < n->size[0]) {
-		memcpy(buf, get_data(n->ptrs[0]+offset), n->size[0]-offset);
-		if ( (size - n->size[0]) > 0 ) memcpy(buf+n->size[0], get_data(n->ptrs[1]), ( n->size[1] > (size-n->size[0]) ) ? (size) : (n->size[1]) );
-	}
-	else {
-		if (offset < n->size[0]+n->size[1]) {
-			memcpy(buf, get_data(n->ptrs[1]+offset), n->size[1]-(offset-n->size[0]));
-		} else if (n->iptr==0) return -1;
-		else {
-			return _read(path, buf, size, offset - (n->size[0]+n->size[1]), n->iptr);
-		}
-	}
-	
-	if (r>0) return _read(path, buf, r, offset - (n->size[0]+n->size[1]), n->iptr);*/
 }
 
 // Actually read data
 int
 nufs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi)
 {
-	int l = tree_lookup(path);
-	return _read(path, buf, size, offset, l);
+    int rv = 6;
+    strcpy(buf, "hello\n");
+    printf("read(%s, %ld bytes, @+%ld) -> %d\n", path, size, offset, rv);
+    return rv;
 }
 
 // Actually write data
 int
 nufs_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi)
 {
-	//printf("write(%s, %ld bytes, @+%ld) -> %d\n", path, size, offset, rv);
-	//return rv;
+    int rv = -1;
+    printf("write(%s, %ld bytes, @+%ld) -> %d\n", path, size, offset, rv);
+    return rv;
 }
 
 // Update the timestamps on a file or directory.
