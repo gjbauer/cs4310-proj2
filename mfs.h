@@ -1,5 +1,6 @@
 #ifndef MFS_H
 #define MFS_H
+#include <sys/types.h>
 int
 read(const char *path, char *buf, size_t size, off_t offset);
 int
@@ -9,7 +10,7 @@ find_parent(const char *path);
 int
 mknod(const char *path, int mode);
 int
-mkdir(const char *path, int mode);
+mkdir(const char *path, mode_t mode);
 int
 mkroot(const char *path, int mode);
 int

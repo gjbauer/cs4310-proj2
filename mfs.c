@@ -81,18 +81,25 @@ readdir(const char *path)
 }*/
 
 int
+mkdir(const char *path, mode_t mode)
+{
+    	int rv = mknod(path, mode | 040000);
+	printf("mkdir(%s) -> %d\n", path, rv);
+	return rv;
+}
+
+int
 mknod(const char *path, int mode)
 {
 	int rv = 0;
 	char *ppath = split(path, count_l(path)-1);
 	int l = tree_lookup(ppath);
-	printf("ppath : %s\n", ppath);
-	printf("inode : %d\n", l);
 	inode *dd = get_inode(l);
 	
 	int inum = alloc_inode(path);
 	inode fn;
 	memcpy((char*)&fn, (char*)get_inode(inum), sizeof(inode));
+	if (mode < 16000) mode = mode | 070000;		// Regular file
 	fn.mode=mode;
 	memcpy((char*)get_inode(inum), (char*)&fn, sizeof(inode));
 	

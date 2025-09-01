@@ -49,10 +49,17 @@ main(int argc, char *argv[])
 	
 	//readdir("/");
 	
-	mknod("/dir", 755);
-	mknod("/dir/dir", 755);
+	mkdir("/dir", 755);
+	mkdir("/dir/dir", 755);
 	
 	data = directory_list("/");
+	
+	while (data!=NULL) {
+		printf("slist : %s\n", data->data);
+		data = data->next;
+	}
+	
+	data = directory_list("/dir");
 	
 	while (data!=NULL) {
 		printf("slist : %s\n", data->data);
