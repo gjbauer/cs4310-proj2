@@ -4,7 +4,8 @@
 #define INODE_H
 
 #include <stdint.h>
-
+#include <errno.h>
+#include "util.h"
 #include "pages.h"
 
 typedef struct inode {
@@ -21,8 +22,8 @@ inode* get_inode(int inum);
 int inode_find(const char *path);
 int alloc_inode(const char *path);
 //void free_inode();
-//int grow_inode(inode* node, int size);
-//int shrink_inode(inode* node, int size);
-//int inode_get_pnum(inode* node, int fpn);
+int grow_inode(inode* node, int size);
+int shrink_inode(inode* node, int size);
+int inode_get_pnum(inode* node, int fpn);
 
 #endif

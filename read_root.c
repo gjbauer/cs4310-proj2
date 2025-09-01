@@ -35,7 +35,7 @@ main(int argc, char *argv[])
 	
 	//readdir("/");	// Empty
 	mknod("/hello.txt", 755);
-	//write("/hello.txt", "hello!", 6, 0);
+	storage_write("/hello.txt", "hello!", 6, 0);
 	//write("/hello.txt", "hello!", 6, 6);
 	//write("/hello.txt", "hello!", 6, 12);
 	//read("/hello.txt", buf, 12, 6);	// < focus here...
@@ -68,7 +68,7 @@ main(int argc, char *argv[])
 	
 	print_directory(get_inode(tree_lookup("/")));
 	
-	read("/hello.txt", buf, 5000, 4096);
+	//read("/hello.txt", buf, 5000, 4096);
 	
 	
 	

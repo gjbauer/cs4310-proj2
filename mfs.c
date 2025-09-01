@@ -123,6 +123,91 @@ mknod(const char *path, int mode)
 	return rv;
 }
 
+int storage_write(const char* path, const char* buf, size_t size, off_t offset)
+/* This function was written by DeepSeek. Un-edited. */
+{
+    // Find the inode for the given path
+    int inum = tree_lookup(path);
+    if (inum < 0) {
+        return -ENOENT; // File not found
+    }
+    
+    inode* node = get_inode(inum);
+    if (node == NULL) {
+        return -ENOENT;
+    }
+    
+    // If writing beyond current size, we need to grow the file
+    if (offset + size > node->size) {
+        int new_size = offset + size;
+        int rv = grow_inode(node, new_size);
+        if (rv < 0) {
+            return -ENOSPC; // No space left
+        }
+    }
+    
+    int bytes_written = 0;
+    int remaining = size;
+    off_t current_offset = offset;
+    
+    while (remaining > 0) {
+        // Calculate which page we're writing to
+        int page_index = current_offset / 4096;
+        int page_offset = current_offset % 4096;
+        
+        // Get the physical page number for this logical page
+        int pnum = -1;
+        
+        if (page_index < 2) {
+            // Direct pointer
+            pnum = node->ptrs[page_index];
+        } else {
+            // Indirect pointer - need to read from the indirect page
+            if (node->iptr == 0) {
+                return -ENOSPC; // No indirect page allocated (should have been allocated by grow_inode)
+            }
+            
+            // Read the page number from the indirect page
+            int* indirect_page = pages_get_page(node->iptr);
+            int indirect_index = page_index - 2;
+            
+            if (indirect_index >= 1024) {
+                return -EFBIG; // File too large
+            }
+            
+            pnum = indirect_page[indirect_index];
+        }
+        
+        if (pnum <= 0) {
+            return -ENOSPC; // Page not allocated (should have been allocated by grow_inode)
+        }
+        
+        // Get pointer to the page data
+        char* page_data = pages_get_page(pnum);
+        
+        // Calculate how much to write to this page
+        int bytes_to_write = 4096 - page_offset;
+        if (bytes_to_write > remaining) {
+            bytes_to_write = remaining;
+        }
+        
+        // Copy data from buffer to page
+        memcpy(page_data + page_offset, buf + bytes_written, bytes_to_write);
+        
+        // Update counters
+        bytes_written += bytes_to_write;
+        remaining -= bytes_to_write;
+        current_offset += bytes_to_write;
+    }
+    
+    // Update file size if we wrote beyond the previous end
+    if (offset + bytes_written > node->size) {
+        node->size = offset + bytes_written;
+    }
+    
+    return bytes_written;
+}
+
 int
 write(const char *path, const char *buf, size_t size, off_t offset)
 {

@@ -4,7 +4,7 @@
 int
 read(const char *path, char *buf, size_t size, off_t offset);
 int
-write(const char *path, const char *buf, size_t size, off_t offset);
+storage_write(const char *path, const char *buf, size_t size, off_t offset);
 int
 find_parent(const char *path);
 int
