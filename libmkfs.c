@@ -14,7 +14,7 @@ mkfs() {
 	dirent root;
 	strcpy(root.name, "/");
 	root.inum = 0;
-	root.next==(struct dirent*){0};
+	root.next==false;
 	inode root_node;
 	inode free_data;
 	free_data.ptrs[0]=1;	// Next open page....
