@@ -1,6 +1,7 @@
 #include "inode.h"
 #include "directory.h"
 #include "hash.h"
+#include "bitmap.h"
 #include "mfs.h"
 #include <string.h>
 #include <stdlib.h>
@@ -83,12 +84,17 @@ int directory_delete(inode* dd, const char* name)
 		else if ( !strcmp((ptr+1)->name, name) ) {
 			(ptr+1)->active=false;
 			ptr->next = (ptr+1)->next;
+			inode dd;
+			memcpy((char*)&dd, get_inode((ptr+1)->inum), sizeof(inode));
+			dd.refs -= 1;
+			memcpy(get_inode((ptr+1)->inum), (char*)&dd, sizeof(inode));
+			if ( dd.refs == 0 ) bitmap_put(get_inode_bitmap(), dd.inum, 0);
 			break;
 		}
 		else ptr++;
 	}
 	
-	//memcpy((char*)ptr, (char*)&file, sizeof(dirent));
+	//memcpy((char*)ptr, (char*)&file, sizeof(dirent));	// I don't think we will need this...but I'm keeping just in case when we are ready to test this function
 
 	return 0;
 }
@@ -126,7 +132,6 @@ slist* directory_list(const char* path)
 
 void print_directory(inode* dd)
 {
-	// TODO: Implement a function which prints the files in a directory to stdout
 	dirent *ptr = (dirent*)pages_get_page(dd->ptrs[0]+5);
 	
 	for (int count=0 ;; count++)
