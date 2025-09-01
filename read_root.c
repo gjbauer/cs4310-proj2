@@ -38,8 +38,8 @@ main(int argc, char *argv[])
 	storage_write("/hello.txt", "hello!", 6, 0);
 	//write("/hello.txt", "hello!", 6, 6);
 	//write("/hello.txt", "hello!", 6, 12);
-	//read("/hello.txt", buf, 12, 6);	// < focus here...
-	//printf("%s\n", buf);
+	storage_read("/hello.txt", buf, 6, 0);	// < focus here...
+	printf("%s\n", buf);
 	//write("/hello.txt", "hello!", 6, 18);
 	//read("/hello.txt", buf, 18, 6);	// < focus here...
 	//printf("%s\n", buf);
