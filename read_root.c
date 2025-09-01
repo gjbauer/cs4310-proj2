@@ -68,6 +68,10 @@ main(int argc, char *argv[])
 	
 	print_directory(get_inode(tree_lookup("/")));
 	
+	read("/hello.txt", buf, 5000, 4096);
+	
+	
+	
 	//readdir("/");
 	
 	//mknod("/dir", 755);

@@ -31,6 +31,10 @@ unmount:
 clean: unmount
 	rm -f nufs *.o test.log data.nufs mkfs read_root lookup
 	
+gdb: nufs
+	mkdir -p mnt || true
+	gdb --args ./nufs -s -f mnt data.nufs
+	
 open:
 	gedit *.c *.h
 

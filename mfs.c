@@ -9,6 +9,10 @@
 #include "mkfs.h"
 #include "mfs.h"
 
+#define SECTOR_SIZE 4096
+#define INODE_SIZE 24 //128	<= DeepSeeks assumed size
+#define DIRECT_BLOCKS 12
+
 char *split(const char *path, int n) {
 	int rv=0;
 	char splt[DIR_NAME];
@@ -126,10 +130,99 @@ write(const char *path, const char *buf, size_t size, off_t offset)
 	//return rv;
 }
 
+int storage_read(const char* path, char* buf, size_t size, off_t offset)
+/* This function was written by DeepSeek. Un-edited. */
+{
+    // Find the inode for the given path
+    int inum = tree_lookup(path);
+    if (inum < 0) {
+        return -ENOENT; // File not found
+    }
+    
+    inode* node = get_inode(inum);
+    if (node == NULL) {
+        return -ENOENT;
+    }
+    
+    // Check if offset is beyond file size
+    if (offset >= node->size) {
+        return 0; // Nothing to read
+    }
+    
+    // Adjust size if it would read beyond the end of the file
+    if (offset + size > node->size) {
+        size = node->size - offset;
+    }
+    
+    if (size == 0) {
+        return 0;
+    }
+    
+    int bytes_read = 0;
+    int remaining = size;
+    off_t current_offset = offset;
+    
+    while (remaining > 0) {
+        // Calculate which page we're reading from
+        int page_index = current_offset / 4096;
+        int page_offset = current_offset % 4096;
+        
+        // Get the physical page number for this logical page
+        int pnum = -1;
+        
+        if (page_index < 2) {
+            // Direct pointer
+            pnum = node->ptrs[page_index];
+        } else {
+            // Indirect pointer - need to read from the indirect page
+            if (node->iptr == 0) {
+                break; // No indirect page allocated
+            }
+            
+            // Read the page number from the indirect page
+            int* indirect_page = pages_get_page(node->iptr);
+            int indirect_index = page_index - 2;
+            
+            if (indirect_index >= 1024) {
+                break; // Beyond maximum supported pages
+            }
+            
+            pnum = indirect_page[indirect_index];
+        }
+        
+        if (pnum <= 0) {
+            break; // No page allocated here
+        }
+        
+        // Get pointer to the page data
+        char* page_data = pages_get_page(pnum);
+        
+        // Calculate how much to read from this page
+        int bytes_to_read = 4096 - page_offset;
+        if (bytes_to_read > remaining) {
+            bytes_to_read = remaining;
+        }
+        
+        // Copy data from page to buffer
+        memcpy(buf + bytes_read, page_data + page_offset, bytes_to_read);
+        
+        // Update counters
+        bytes_read += bytes_to_read;
+        remaining -= bytes_to_read;
+        current_offset += bytes_to_read;
+    }
+    
+    return bytes_read;
+}
+
 int
 read(const char *path, char *buf, size_t size, off_t offset)
 {
 	int rv = 4096;
+	printf("INODE_SIZE : %d\n", sizeof(inode));
+	printf("offset / 4096 : %d\n", offset/4096);
+	printf("offset / 4096 % 2 : %d\n", (offset/4096) % 2);
+	printf("size + offset / 4096 : %d\n", (size+offset)/4096);
 	printf("read(%s, %ld bytes, @+%ld) -> %d\n", path, size, offset, rv);
 	return rv;
 }

@@ -222,8 +222,7 @@ nufs_init_ops(struct fuse_operations* ops)
     ops->rename   = nufs_rename;	// This should be relatively quick
     ops->chmod    = nufs_chmod;		// As well as this one
     ops->truncate = nufs_truncate;	// This one we can focus on after we have completed everything else...
-    ops->open	  = nufs_open;	// This
-    ops->create	  = nufs_create; // And this likely aren't super important
+    ops->open	  = nufs_open;	// This likely isn't super important
     ops->read     = nufs_read;	// <= Focus on here
     ops->write    = nufs_write;	// <= And here
     ops->utimens  = nufs_utimens;	// These last two just for extra points!!
