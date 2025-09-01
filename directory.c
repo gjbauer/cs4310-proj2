@@ -93,8 +93,6 @@ int directory_delete(inode* dd, const char* name)
 		}
 		else ptr++;
 	}
-	
-	//memcpy((char*)ptr, (char*)&file, sizeof(dirent));	// I don't think we will need this...but I'm keeping just in case when we are ready to test this function
 
 	return 0;
 }
