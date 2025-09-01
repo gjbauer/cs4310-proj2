@@ -40,6 +40,7 @@ int tree_lookup(const char* path) {
 	
 	return directory_lookup(ptr, path);
 }
+
 int directory_put(inode* dd, const char* name, int inum)
 {
 	// Setup file

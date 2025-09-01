@@ -22,6 +22,8 @@ int
 nufs_access(const char *path, int mask)
 {
 	int rv = 0;
+	int l = tree_lookup(path);
+	if ( l == -ENOENT ) rv = -1;
 	printf("access(%s, %04o) -> %d\n", path, mask, rv);
 	return rv;
 }
@@ -33,10 +35,12 @@ nufs_getattr(const char *path, struct stat *st)
 {
 	int rv = 0;
 	int l = tree_lookup(path);
-	inode *dd = get_inode(l);
+	//printf("l : %d\n", l);
+	inode dd;
+	memcpy((char*)&dd, (char*)get_inode(l), sizeof(inode));
 	
-	st->st_mode = dd->mode;
-	st->st_size = dd->size;
+	st->st_mode = dd.mode;
+	st->st_size = dd.size;
 	st->st_uid = getuid();
 	
 	printf("getattr(%s) -> (%d) {mode: %04o, size: %ld}\n", path, rv, st->st_mode, st->st_size);
@@ -61,18 +65,10 @@ nufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	while (data!=NULL) {
 		rv = nufs_getattr(data->data, &st);
 		assert(rv == 0);
-		filler(buf, data->data, &st, 0);
+		printf("%s\n", data->data);
+		//filler(buf, data->data, &st, 0);
 		data = data->next;
 	}
-
-	/*rv = nufs_getattr("/", &st);
-	assert(rv == 0);
-
-	filler(buf, ".", &st, 0);
-
-	rv = nufs_getattr("/hello.txt", &st);
-	assert(rv == 0);
-	filler(buf, "hello.txt", &st, 0);*/
 
 	printf("readdir(%s) -> %d\n", path, rv);
 	return 0;
@@ -91,7 +87,7 @@ nufs_mknod(const char *path, mode_t mode, dev_t rdev)
 	int inum = alloc_inode(path);
 	inode fn;
 	memcpy((char*)&fn, (char*)get_inode(inum), sizeof(inode));
-	if (mode < 10000) mode = mode | 070000;		// Regular file
+	if (mode < 40000) mode = mode | 070000;		// Regular file
 	else {			// Directory
 		dirent *ptr = (dirent*)pages_get_page(get_inode(inum)->ptrs[0]+5);
 		strcpy(ptr->name, ".");
@@ -414,7 +410,7 @@ nufs_init_ops(struct fuse_operations* ops)
 
 struct fuse_operations nufs_ops;
 
-int
+/*int
 main(int argc, char *argv[])
 {
 	assert(argc > 2 && argc < 6);
@@ -422,5 +418,5 @@ main(int argc, char *argv[])
 	//storage_init(argv[--argc]);
 	nufs_init_ops(&nufs_ops);
 	return fuse_main(argc, argv, &nufs_ops, NULL);
-}
+}*/
 
