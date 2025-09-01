@@ -1,0 +1,403 @@
+// based on cs3650 starter code
+
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <errno.h>
+#include <sys/stat.h>
+#include <bsd/string.h>
+#include <assert.h>
+
+#define FUSE_USE_VERSION 26
+#include <fuse.h>
+
+#include "directory.h"
+#include "inode.h"
+#include "string.h"
+
+// implementation for: man 2 access
+// Checks if a file exists.
+int
+nufs_access(const char *path, int mask)
+{
+	int rv = 0;
+	printf("access(%s, %04o) -> %d\n", path, mask, rv);
+	return rv;
+}
+
+// implementation for: man 2 stat
+// gets an object's attributes (type, permissions, size, etc)
+int
+nufs_getattr(const char *path, struct stat *st)
+{
+	int rv = 0;
+	int l = tree_lookup(path);
+	inode *dd = get_inode(l);
+	
+	st->st_mode = dd->mode;
+	st->st_size = dd->size;
+	st->st_uid = getuid();
+	
+	printf("getattr(%s) -> (%d) {mode: %04o, size: %ld}\n", path, rv, st->st_mode, st->st_size);
+	return rv;
+}
+
+// implementation for: man 2 readdir
+// lists the contents of a directory
+int
+nufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
+			 off_t offset, struct fuse_file_info *fi)
+{
+	struct stat st;
+	int rv;
+	
+	// TODO: Implement readdir...
+
+	/*rv = nufs_getattr("/", &st);
+	assert(rv == 0);
+
+	filler(buf, ".", &st, 0);
+
+	rv = nufs_getattr("/hello.txt", &st);
+	assert(rv == 0);
+	filler(buf, "hello.txt", &st, 0);*/
+
+	printf("readdir(%s) -> %d\n", path, rv);
+	return 0;
+}
+
+// mknod makes a filesystem object like a file or directory
+// called for: man 2 open, man 2 link
+int
+nufs_mknod(const char *path, mode_t mode, dev_t rdev)
+{
+	int rv = 0;
+	char *ppath = split(path, count_l(path)-1);
+	int l = tree_lookup(ppath);
+	inode *dd = get_inode(l);
+	
+	int inum = alloc_inode(path);
+	inode fn;
+	memcpy((char*)&fn, (char*)get_inode(inum), sizeof(inode));
+	if (mode < 10000) mode = mode | 070000;		// Regular file
+	else {			// Directory
+		dirent *ptr = (dirent*)pages_get_page(get_inode(inum)->ptrs[0]+5);
+		strcpy(ptr->name, ".");
+		ptr->inum=inum;
+		ptr->next=true;
+		ptr++;
+		strcpy(ptr->name, "..");
+		ptr->inum=dd->inum;
+	}
+	fn.mode=mode;
+	fn.refs=1;
+	memcpy((char*)get_inode(inum), (char*)&fn, sizeof(inode));
+	
+	directory_put(dd, path, inum);
+
+	printf("mknod(%s, %04o) -> %d\n", path, mode, rv);
+	return rv;
+}
+
+// most of the following callbacks implement
+// another system call; see section 2 of the manual
+int
+nufs_mkdir(const char *path, mode_t mode)
+{
+	int rv = nufs_mknod(path, mode | 040000, 0);
+	printf("mkdir(%s) -> %d\n", path, rv);
+	return rv;
+}
+
+int
+nufs_unlink(const char *path)
+{
+	int rv = -1;
+	printf("unlink(%s) -> %d\n", path, rv);
+	return rv;
+}
+
+int
+nufs_link(const char *from, const char *to)
+{
+	int rv = -1;
+	printf("link(%s => %s) -> %d\n", from, to, rv);
+	return rv;
+}
+
+int
+nufs_rmdir(const char *path)
+{
+	int rv = -1;
+	printf("rmdir(%s) -> %d\n", path, rv);
+	return rv;
+}
+
+// implements: man 2 rename
+// called to move a file within the same filesystem
+int
+nufs_rename(const char *from, const char *to)
+{
+	int rv = -1;
+	printf("rename(%s => %s) -> %d\n", from, to, rv);
+	return rv;
+}
+
+int
+nufs_chmod(const char *path, mode_t mode)
+{
+	int rv = -1;
+	printf("chmod(%s, %04o) -> %d\n", path, mode, rv);
+	return rv;
+}
+
+int
+nufs_truncate(const char *path, off_t size)
+{
+	int rv = -1;
+	printf("truncate(%s, %ld bytes) -> %d\n", path, size, rv);
+	return rv;
+}
+
+// this is called on open, but doesn't need to do much
+// since FUSE doesn't assume you maintain state for
+// open files.
+int
+nufs_open(const char *path, struct fuse_file_info *fi)
+{
+	int rv = 0;
+	printf("open(%s) -> %d\n", path, rv);
+	return rv;
+}
+
+// Actually read data
+int
+nufs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi)
+/* This function was written by DeepSeek. Un-edited. */
+{
+	// Find the inode for the given path
+	int inum = tree_lookup(path);
+	if (inum < 0) {
+		return -ENOENT; // File not found
+	}
+	
+	inode* node = get_inode(inum);
+	if (node == NULL) {
+		return -ENOENT;
+	}
+	
+	// Check if offset is beyond file size
+	if (offset >= node->size) {
+		return 0; // Nothing to read
+	}
+	
+	// Adjust size if it would read beyond the end of the file
+	if (offset + size > node->size) {
+		size = node->size - offset;
+	}
+	
+	if (size == 0) {
+		return 0;
+	}
+	
+	int bytes_read = 0;
+	int remaining = size;
+	off_t current_offset = offset;
+	
+	while (remaining > 0) {
+		// Calculate which page we're reading from
+		int page_index = current_offset / 4096;
+		int page_offset = current_offset % 4096;
+		
+		// Get the physical page number for this logical page
+		int pnum = -1;
+		
+		if (page_index < 2) {
+			// Direct pointer
+			pnum = node->ptrs[page_index];
+		} else {
+			// Indirect pointer - need to read from the indirect page
+			if (node->iptr == 0) {
+				break; // No indirect page allocated
+			}
+			
+			// Read the page number from the indirect page
+			int* indirect_page = pages_get_page(node->iptr);
+			int indirect_index = page_index - 2;
+			
+			if (indirect_index >= 1024) {
+				break; // Beyond maximum supported pages
+			}
+			
+			pnum = indirect_page[indirect_index];
+		}
+		
+		if (pnum <= 0) {
+			break; // No page allocated here
+		}
+		
+		// Get pointer to the page data
+		char* page_data = pages_get_page(pnum);
+		
+		// Calculate how much to read from this page
+		int bytes_to_read = 4096 - page_offset;
+		if (bytes_to_read > remaining) {
+			bytes_to_read = remaining;
+		}
+		
+		// Copy data from page to buffer
+		memcpy(buf + bytes_read, page_data + page_offset, bytes_to_read);
+		
+		// Update counters
+		bytes_read += bytes_to_read;
+		remaining -= bytes_to_read;
+		current_offset += bytes_to_read;
+	}
+	
+	printf("read(%s, %ld bytes, @+%ld) -> %d\n", path, size, offset, bytes_read);
+	return bytes_read;
+}
+
+// Actually write data
+int
+nufs_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi)
+/* This function was written by DeepSeek. Un-edited. */
+{
+	// Find the inode for the given path
+	int inum = tree_lookup(path);
+	if (inum < 0) {
+		return -ENOENT; // File not found
+	}
+	
+	inode* node = get_inode(inum);
+	if (node == NULL) {
+		return -ENOENT;
+	}
+	
+	// If writing beyond current size, we need to grow the file
+	if (offset + size > node->size) {
+		int new_size = offset + size;
+		int rv = grow_inode(node, new_size);
+		if (rv < 0) {
+			return -ENOSPC; // No space left
+		}
+	}
+	
+	int bytes_written = 0;
+	int remaining = size;
+	off_t current_offset = offset;
+	
+	while (remaining > 0) {
+		// Calculate which page we're writing to
+		int page_index = current_offset / 4096;
+		int page_offset = current_offset % 4096;
+		
+		// Get the physical page number for this logical page
+		int pnum = -1;
+		
+		if (page_index < 2) {
+			// Direct pointer
+			pnum = node->ptrs[page_index];
+		} else {
+			// Indirect pointer - need to read from the indirect page
+			if (node->iptr == 0) {
+				return -ENOSPC; // No indirect page allocated (should have been allocated by grow_inode)
+			}
+			
+			// Read the page number from the indirect page
+			int* indirect_page = pages_get_page(node->iptr);
+			int indirect_index = page_index - 2;
+			
+			if (indirect_index >= 1024) {
+				return -EFBIG; // File too large
+			}
+			
+			pnum = indirect_page[indirect_index];
+		}
+		
+		if (pnum <= 0) {
+			return -ENOSPC; // Page not allocated (should have been allocated by grow_inode)
+		}
+		
+		// Get pointer to the page data
+		char* page_data = pages_get_page(pnum);
+		
+		// Calculate how much to write to this page
+		int bytes_to_write = 4096 - page_offset;
+		if (bytes_to_write > remaining) {
+			bytes_to_write = remaining;
+		}
+		
+		// Copy data from buffer to page
+		memcpy(page_data + page_offset, buf + bytes_written, bytes_to_write);
+		
+		// Update counters
+		bytes_written += bytes_to_write;
+		remaining -= bytes_to_write;
+		current_offset += bytes_to_write;
+	}
+	
+	// Update file size if we wrote beyond the previous end
+	if (offset + bytes_written > node->size) {
+		node->size = offset + bytes_written;
+	}
+	
+	printf("write(%s, %ld bytes, @+%ld) -> %d\n", path, size, offset, bytes_written);
+	return bytes_written;
+}
+
+// Update the timestamps on a file or directory.
+int
+nufs_utimens(const char* path, const struct timespec ts[2])
+{
+	int rv = -1;
+	printf("utimens(%s, [%ld, %ld; %ld %ld]) -> %d\n",
+		   path, ts[0].tv_sec, ts[0].tv_nsec, ts[1].tv_sec, ts[1].tv_nsec, rv);
+	return rv;
+}
+
+// Extended operations
+int
+nufs_ioctl(const char* path, int cmd, void* arg, struct fuse_file_info* fi,
+		   unsigned int flags, void* data)
+{
+	int rv = -1;
+	printf("ioctl(%s, %d, ...) -> %d\n", path, cmd, rv);
+	return rv;
+}
+
+void
+nufs_init_ops(struct fuse_operations* ops)
+{
+	memset(ops, 0, sizeof(struct fuse_operations));
+	ops->access   = nufs_access;
+	ops->getattr  = nufs_getattr;
+	ops->readdir  = nufs_readdir;
+	ops->mknod	= nufs_mknod;
+	ops->mkdir	= nufs_mkdir;
+	ops->link	 = nufs_link;
+	ops->unlink   = nufs_unlink;
+	ops->rmdir	= nufs_rmdir;
+	ops->rename   = nufs_rename;
+	ops->chmod	= nufs_chmod;
+	ops->truncate = nufs_truncate;
+	ops->open	  = nufs_open;
+	ops->read	 = nufs_read;
+	ops->write	= nufs_write;
+	ops->utimens  = nufs_utimens;
+	ops->ioctl	= nufs_ioctl;
+};
+
+struct fuse_operations nufs_ops;
+
+int
+main(int argc, char *argv[])
+{
+	assert(argc > 2 && argc < 6);
+	printf("TODO: mount %s as data file\n", argv[--argc]);
+	//storage_init(argv[--argc]);
+	nufs_init_ops(&nufs_ops);
+	return fuse_main(argc, argv, &nufs_ops, NULL);
+}
+
