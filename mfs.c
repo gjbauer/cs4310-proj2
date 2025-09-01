@@ -99,7 +99,16 @@ mknod(const char *path, int mode)
 	int inum = alloc_inode(path);
 	inode fn;
 	memcpy((char*)&fn, (char*)get_inode(inum), sizeof(inode));
-	if (mode < 16000) mode = mode | 070000;		// Regular file
+	if (mode < 10000) mode = mode | 070000;		// Regular file
+	else {			// Directory
+		dirent *ptr = (dirent*)pages_get_page(get_inode(inum)->ptrs[0]+5);
+		strcpy(ptr->name, ".");
+		ptr->inum=inum;
+		ptr->next=true;
+		ptr++;
+		strcpy(ptr->name, "..");
+		ptr->inum=dd->inum;
+	}
 	fn.mode=mode;
 	memcpy((char*)get_inode(inum), (char*)&fn, sizeof(inode));
 	
