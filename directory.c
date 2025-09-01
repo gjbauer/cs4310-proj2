@@ -80,8 +80,9 @@ int directory_delete(inode* dd, const char* name)
 			count = 0;
 			dd = get_inode(dd->iptr);
 		}
-		else if ( !strcmp(ptr->name, name) ) {
-			ptr->active=true;
+		else if ( !strcmp((ptr+1)->name, name) ) {
+			(ptr+1)->active=false;
+			ptr->next = (ptr+1)->next;
 			break;
 		}
 		else ptr++;
