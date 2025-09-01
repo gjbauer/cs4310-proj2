@@ -7,7 +7,7 @@ CFLAGS := -g `pkg-config fuse --cflags`
 LDLIBS := `pkg-config fuse --libs`
 
 nufs: $(OBJS)
-	gcc $(CLFAGS) -o $@ nufs.o pages.o bitmap.o inode.o directory.o hash.o libmkfs.o $(LDLIBS)
+	gcc $(CLFAGS) -o $@ nufs.o pages.o bitmap.o inode.o directory.o hash.o libmkfs.o mfs.o slist.o $(LDLIBS)
 
 mkfs: $(OBJS)
 	gcc $(CLFAGS) -o mkfs mkfs.o mfs.o pages.o bitmap.o inode.o directory.o hash.o libmkfs.o $(LDLIBS)
@@ -20,6 +20,13 @@ lookup: $(OBJS)
 
 %.o: %.c $(HDRS)
 	gcc $(CFLAGS) -c -o $@ $<
+
+mount: nufs
+	mkdir -p mnt || true
+	./nufs -s -f mnt data.nufs
+
+unmount:
+	fusermount -u mnt || true
 
 clean: unmount
 	rm -f nufs *.o test.log data.nufs mkfs read_root lookup

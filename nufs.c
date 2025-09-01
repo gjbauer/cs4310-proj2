@@ -21,51 +21,6 @@
 #include "bitmap.h"
 #include "nufs.h"
 
-int
-count_l(const char *path) {
-	int c=0;
-	for(int i=0; path[i]; i++) {
-		if (path[i]=='/') c++;
-	}
-	return c;
-}
-
-int
-find_parent(const char *path)
-{
-	char ptr[DIR_NAME];
-	int k = count_l(path);
-	int n=0;
-	for (int i=0; i<k; i++) {
-		//split(path, i, ptr);
-		n = tree_lookup(ptr);
-		if (n<0) return -ENOENT;
-	}
-	// TODO : Locate a parent directory and return an inode, or an iptr
-	return n;
-}
-
-
-char*
-parent_path(const char *path)
-{
-	char ptr[DIR_NAME];
-	int k = count_l(path);
-	int n=0;
-	for (int i=0; i<k; i++) {
-		//split(path, i, ptr);
-	}
-	
-	char *m = (char*)malloc(DIR_NAME * sizeof(char));
-	strncpy(m, ptr, DIR_NAME);
-	return m;
-}
-
-char *get_data(int offset)
-{
-	return ((char*)get_root_start()+offset);
-}
-
 // implementation for: man 2 access
 // Checks if a file exists.
 int
@@ -165,7 +120,7 @@ _readdir(const char *path, void *buf, fuse_fill_dir_t filler, int l)
 	inode *a = get_inode(l);
 	dirent e;
 	
-	memcpy(&e, get_data(a->ptrs[0]), sizeof(e));
+	//memcpy(&e, get_data(a->ptrs[0]), sizeof(e));
 	if (e.active==true) return 0;
 	rv = nufs_getattr(e.name, &st);
 	printf("e.name = %c\n", e.name);
@@ -174,7 +129,7 @@ _readdir(const char *path, void *buf, fuse_fill_dir_t filler, int l)
 	printf("%s\n", e.name);	// getaddr
 	rv++;
 	
-	memcpy(&e, get_data(a->ptrs[1]), sizeof(e));
+	//memcpy(&e, get_data(a->ptrs[1]), sizeof(e));
 	if (!strcmp(e.name, "") || a->ptrs[1]==0) return 0;
 	rv = nufs_getattr(e.name, &st);
 	assert(rv == 0);
