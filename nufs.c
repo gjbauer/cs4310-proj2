@@ -52,7 +52,18 @@ nufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	struct stat st;
 	int rv;
 	
+	rv = nufs_getattr(path, &st);
+	assert(rv == 0);
+	
 	// TODO: Implement readdir...
+	slist *data = directory_list(path);
+	
+	while (data!=NULL) {
+		rv = nufs_getattr(data->data, &st);
+		assert(rv == 0);
+		filler(buf, data->data, &st, 0);
+		data = data->next;
+	}
 
 	/*rv = nufs_getattr("/", &st);
 	assert(rv == 0);
@@ -140,6 +151,13 @@ int
 nufs_rename(const char *from, const char *to)
 {
 	int rv = -1;
+	int l = tree_lookup(split(from, count_l(from)-1));
+	inode *dd = get_inode(l);
+	
+	directory_delete(dd, from);
+	l = tree_lookup(from);
+	directory_put(dd, to, l);
+	
 	printf("rename(%s => %s) -> %d\n", from, to, rv);
 	return rv;
 }
@@ -148,6 +166,11 @@ int
 nufs_chmod(const char *path, mode_t mode)
 {
 	int rv = -1;
+	int l = tree_lookup(path);
+	inode dd;
+	memcpy((char*)&dd, (char*)get_inode(l), sizeof(inode));
+	dd.mode = mode;
+	memcpy((char*)get_inode(l), (char*)&dd, sizeof(inode));
 	printf("chmod(%s, %04o) -> %d\n", path, mode, rv);
 	return rv;
 }
@@ -174,7 +197,7 @@ nufs_open(const char *path, struct fuse_file_info *fi)
 // Actually read data
 int
 nufs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi)
-/* This function was written by DeepSeek. Un-edited. */
+/* This function was written by DeepSeek. */
 {
 	// Find the inode for the given path
 	int inum = tree_lookup(path);
@@ -262,7 +285,7 @@ nufs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_fi
 // Actually write data
 int
 nufs_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi)
-/* This function was written by DeepSeek. Un-edited. */
+/* This function was written by DeepSeek. */
 {
 	// Find the inode for the given path
 	int inum = tree_lookup(path);
