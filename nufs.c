@@ -332,22 +332,22 @@ void
 nufs_init_ops(struct fuse_operations* ops)
 {
     memset(ops, 0, sizeof(struct fuse_operations));
-    ops->access   = nufs_access;
-    ops->getattr  = nufs_getattr;
-    ops->readdir  = nufs_readdir;
-    ops->mknod    = nufs_mknod;
-    ops->mkdir    = nufs_mkdir;
-    ops->link     = nufs_link;
-    ops->unlink   = nufs_unlink;
-    ops->rmdir    = nufs_rmdir;
-    ops->rename   = nufs_rename;
-    ops->chmod    = nufs_chmod;
-    ops->truncate = nufs_truncate;
-    ops->open	  = nufs_open;
-    ops->create	  = nufs_create;
-    ops->read     = nufs_read;
-    ops->write    = nufs_write;
-    ops->utimens  = nufs_utimens;
+    ops->access   = nufs_access;	// Check user permissions?
+    ops->getattr  = nufs_getattr;	// Return mode?
+    ops->readdir  = nufs_readdir;	// We can do this after read/write
+    //ops->mknod    = nufs_mknod;
+    //ops->mkdir    = nufs_mkdir;
+    ops->link     = nufs_link;	// We can focus on this one after readdir
+    ops->unlink   = nufs_unlink;	// And this after the link function
+    ops->rmdir    = nufs_rmdir;	// Utilize unlink function for this one
+    ops->rename   = nufs_rename;	// This should be relatively quick
+    ops->chmod    = nufs_chmod;		// As well as this one
+    ops->truncate = nufs_truncate;	// This one we can focus on after we have completed everything else...
+    ops->open	  = nufs_open;	// This
+    ops->create	  = nufs_create; // And this likely aren't super important
+    ops->read     = nufs_read;	// <= Focus on here
+    ops->write    = nufs_write;	// <= And here
+    ops->utimens  = nufs_utimens;	// These last two just for extra points!!
     ops->ioctl    = nufs_ioctl;
 };
 
