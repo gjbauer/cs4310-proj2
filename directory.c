@@ -64,15 +64,32 @@ int directory_put(inode* dd, const char* name, int inum)
 		else ptr++;
 	}
 	
-	// TODO: Track inode refs...
 	memcpy((char*)ptr, (char*)&file, sizeof(dirent));
 	
 	return 0;
 }
 
 int directory_delete(inode* dd, const char* name)
-{
-	// TODO: Delete function
+{	
+	dirent *ptr = (dirent*)pages_get_page(dd->ptrs[0]+5);
+	
+	for (int count=0 ;; count++)
+	{
+		if ( count == 4096/sizeof(dirent) ) ptr = (dirent*)pages_get_page(dd->ptrs[1]+5);	// Data pages start at 5
+		else if ( count == 8192/sizeof(dirent) ) {
+			count = 0;
+			dd = get_inode(dd->iptr);
+		}
+		else if ( !strcmp(ptr->name, name) ) {
+			ptr->active=true;
+			break;
+		}
+		else ptr++;
+	}
+	
+	//memcpy((char*)ptr, (char*)&file, sizeof(dirent));
+
+	return 0;
 }
 
 slist* directory_list(const char* path)
@@ -109,6 +126,28 @@ slist* directory_list(const char* path)
 void print_directory(inode* dd)
 {
 	// TODO: Implement a function which prints the files in a directory to stdout
+	dirent *ptr = (dirent*)pages_get_page(dd->ptrs[0]+5);
+	
+	for (int count=0 ;; count++)
+	{
+		if ( ptr->next == false ) {
+			printf("%s\n", ptr->name);
+			break;
+		}
+		else if ( count == 4096/sizeof(dirent) ) {
+			printf("%s\n", ptr->name);
+			ptr = (dirent*)pages_get_page(dd->ptrs[1]+5);	// Data pages start at 5
+		}
+		else if ( count == 8192/sizeof(dirent) ) {
+			printf("%s\n", ptr->name);
+			count = 0;
+			dd = get_inode(dd->iptr);
+		}
+		else {
+			printf("%s\n", ptr->name);
+			ptr++;
+		}
+	}
 }
 
 

@@ -110,6 +110,7 @@ mknod(const char *path, int mode)
 		ptr->inum=dd->inum;
 	}
 	fn.mode=mode;
+	fn.refs=1;
 	memcpy((char*)get_inode(inum), (char*)&fn, sizeof(inode));
 	
 	directory_put(dd, path, inum);

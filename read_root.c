@@ -66,6 +66,8 @@ main(int argc, char *argv[])
 		data = data->next;
 	}
 	
+	print_directory(get_inode(tree_lookup("/")));
+	
 	//readdir("/");
 	
 	//mknod("/dir", 755);
