@@ -32,46 +32,93 @@ nufs_access(const char *path, int mask)
 // gets an object's attributes (type, permissions, size, etc)
 int
 nufs_getattr(const char *path, struct stat *st)
+/* This function was written by DeepSeek. */
 {
-	int rv = 0;
-	int l = tree_lookup(path);
-	//printf("l : %d\n", l);
-	inode dd;
-	memcpy((char*)&dd, (char*)get_inode(l), sizeof(inode));
-	
-	st->st_mode = dd.mode;
-	st->st_size = dd.size;
-	st->st_uid = getuid();
-	
-	printf("getattr(%s) -> (%d) {mode: %04o, size: %ld}\n", path, rv, st->st_mode, st->st_size);
-	return rv;
+    int rv = 0;
+    memset(st, 0, sizeof(struct stat));
+    
+    // Handle root directory
+    if (strcmp(path, "/") == 0) {
+        st->st_mode = S_IFDIR | 0755;
+        st->st_nlink = 2;
+        st->st_size = 0;
+        st->st_uid = getuid();
+        st->st_gid = getgid();
+        st->st_atime = st->st_mtime = st->st_ctime = time(NULL);
+        printf("getattr(%s) -> (%d) {mode: %04o, size: %ld}\n", path, rv, st->st_mode, st->st_size);
+        return 0;
+    }
+    
+    // Look up the inode for this path
+    int inum = tree_lookup(path);
+    if (inum < 0) {
+        rv = -ENOENT;
+    }
+    
+    // Get the inode
+    inode* node = get_inode(inum);
+    if (node == NULL) {
+        rv = -ENOENT;
+    }
+    
+    // Fill in the stat structure
+    st->st_mode = node->mode;
+    st->st_nlink = 1;
+    st->st_size = node->size;
+    st->st_uid = getuid();
+    st->st_gid = getgid();
+    st->st_atime = st->st_mtime = st->st_ctime = time(NULL);
+    st->st_ino = inum;
+    
+    printf("getattr(%s) -> (%d) {mode: %04o, size: %ld}\n", path, rv, st->st_mode, st->st_size);
+    return rv;
 }
 
 // implementation for: man 2 readdir
 // lists the contents of a directory
 int
 nufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
-			 off_t offset, struct fuse_file_info *fi)
+             off_t offset, struct fuse_file_info *fi)
+/* This function was written by DeepSeek. */
 {
-	struct stat st;
-	int rv;
-	
-	rv = nufs_getattr(path, &st);
-	assert(rv == 0);
-	
-	// TODO: Implement readdir...
-	slist *data = directory_list(path);
-	
-	while (data!=NULL) {
-		rv = nufs_getattr(data->data, &st);
-		assert(rv == 0);
-		printf("%s\n", data->data);
-		//filler(buf, data->data, &st, 0);
-		data = data->next;
-	}
-
-	printf("readdir(%s) -> %d\n", path, rv);
-	return 0;
+    int rv = 0;
+    
+    // Get the directory listing
+    slist* entries = directory_list(path);
+    slist* current = entries;
+    
+    // Add "." and ".." entries first
+    struct stat st;
+    rv = nufs_getattr(path, &st);
+    if (rv == 0) {
+        filler(buf, ".", &st, 0);
+        filler(buf, "..", &st, 0);
+    }
+    
+    // Add all directory entries
+    while (current != NULL) {
+        // Build full path to get attributes
+        char full_path[256];
+        if (strcmp(path, "/") == 0) {
+            snprintf(full_path, sizeof(full_path), "/%s", current->data);
+        } else {
+            snprintf(full_path, sizeof(full_path), "%s/%s", path, current->data);
+        }
+        
+        // Get file attributes
+        rv = nufs_getattr(full_path, &st);
+        if (rv == 0) {
+            filler(buf, current->data, &st, 0);
+        }
+        
+        current = current->next;
+    }
+    
+    // Free the list
+    s_free(entries);
+    
+    printf("readdir(%s) -> %d\n", path, rv);
+    return rv;
 }
 
 // mknod makes a filesystem object like a file or directory
@@ -87,7 +134,7 @@ nufs_mknod(const char *path, mode_t mode, dev_t rdev)
 	int inum = alloc_inode(path);
 	inode fn;
 	memcpy((char*)&fn, (char*)get_inode(inum), sizeof(inode));
-	if (mode < 40000) mode = mode | 070000;		// Regular file
+	if (mode < 10000) mode = mode | 0100000;		// Regular file
 	else {			// Directory
 		dirent *ptr = (dirent*)pages_get_page(get_inode(inum)->ptrs[0]+5);
 		strcpy(ptr->name, ".");
@@ -410,13 +457,12 @@ nufs_init_ops(struct fuse_operations* ops)
 
 struct fuse_operations nufs_ops;
 
-/*int
+int
 main(int argc, char *argv[])
 {
-	assert(argc > 2 && argc < 6);
-	printf("TODO: mount %s as data file\n", argv[--argc]);
-	//storage_init(argv[--argc]);
+	assert(argc > 2 && argc < 7);
+	storage_init(argv[--argc]);
 	nufs_init_ops(&nufs_ops);
 	return fuse_main(argc, argv, &nufs_ops, NULL);
-}*/
+}
 
