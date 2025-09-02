@@ -175,36 +175,74 @@ nufs_mkdir(const char *path, mode_t mode)
 
 int
 nufs_unlink(const char *path)
+/* This function was written by DeepSeek. */
 {
-	int rv = -ENOENT;
-	int par = tree_lookup(split(path, count_l(path)-1));
-	inode *ptr = get_inode(par);		// Parent
-	int l = tree_lookup(path);
-	inode *dd = get_inode(l);
+	// Split path into directory and filename
+	char* last_slash = strrchr(path, '/');
+	if (last_slash == NULL) {
+		return -EINVAL;
+	}
 	
-	dd->refs-=1;
+	char dir_path[256];
+	char filename[DIR_NAME];
 	
-	void *ibm = get_inode_bitmap();
-	if (dd->refs==0) bitmap_put(ibm, dd->inum, 0);
+	int dir_len = last_slash - path;
+	if (dir_len == 0) {
+		strcpy(dir_path, "/");
+		strncpy(filename, path + 1, DIR_NAME - 1);
+	} else {
+		strncpy(dir_path, path, dir_len);
+		dir_path[dir_len] = '\0';
+		strncpy(filename, last_slash + 1, DIR_NAME - 1);
+	}
+	filename[DIR_NAME - 1] = '\0';
 	
-	dirent *file = (dirent*)pages_get_page(ptr->ptrs[0]+5);
+	// Look up parent directory
+	int dir_inum = tree_lookup(dir_path);
+	if (dir_inum < 0) {
+		return -ENOENT;
+	}
 	
-	for (int count=0;;count++) {
-		if (!strncmp(file->name, path, DIR_NAME))
-		{
-			dirent temp;
-			temp.active=false;
-			memcpy((char*)file, (char*)&temp, sizeof(dirent));
-			rv = 0;
-			break;
+	inode* dir_node = get_inode(dir_inum);
+	if (dir_node == NULL || !S_ISDIR(dir_node->mode)) {
+		return -ENOTDIR;
+	}
+	
+	// Look up the file
+	int file_inum = directory_lookup(dir_node, filename);
+	if (file_inum < 0) {
+		return -ENOENT;
+	}
+	
+	inode* file_node = get_inode(file_inum);
+	if (file_node == NULL) {
+		return -ENOENT;
+	}
+	
+	// Remove directory entry
+	int rv = directory_delete(dir_node, filename);
+	if (rv < 0) {
+		return rv;
+	}
+	
+	// Decrement reference count and free if needed
+	file_node->refs--;
+	if (file_node->refs <= 0) {
+		// Free all data pages
+		for (int i = 0; i < 2; i++) {
+			if (file_node->ptrs[i] != 0) {
+				free_page(file_node->ptrs[i]);
+			}
 		}
-		if (file->next==false) break;
-		else if ( count == 4096/sizeof(dirent) ) file = (dirent*)pages_get_page(ptr->ptrs[1]+5);	// Data pages start at 5
-		else if ( count == 8192/sizeof(dirent) ) {
-			count = 0;
-			ptr = get_inode(ptr->iptr);
+		
+		// Free indirect page
+		if (file_node->iptr != 0) {
+			free_page(file_node->iptr);
 		}
-		else file++;
+		
+		// Free inode
+		void* ibm = get_inode_bitmap();
+		bitmap_put(ibm, file_inum, 0);
 	}
 	
 	printf("unlink(%s) -> %d\n", path, rv);
