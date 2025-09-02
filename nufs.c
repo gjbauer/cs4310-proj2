@@ -105,11 +105,6 @@ nufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
     
     // Add "." and ".." entries first
     struct stat st;
-    rv = nufs_getattr(path, &st);
-    if (rv == 0) {
-        filler(buf, ".", &st, 0);
-        filler(buf, "..", &st, 0);
-    }
     
     // Add all directory entries
     while (current != NULL) {
