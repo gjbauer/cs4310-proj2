@@ -113,7 +113,7 @@ slist* directory_list(const char* path)
 			strncpy(temp, data, i * (DIR_NAME+1));
 			data = (char*)realloc(data, i+2 * (DIR_NAME+1) * sizeof(char));
 		}
-		strncat(data, file->name, DIR_NAME);
+		if (file->active) strncat(data, file->name, DIR_NAME);
 		strncat(data, ";", 1);					// Choose a delimiter...I think a semicolon ( ; ) will work...
 		if (file->next==false) break;
 		else if ( count == 4096/sizeof(dirent) ) file = (dirent*)pages_get_page(ptr->ptrs[1]+5);	// Data pages start at 5

@@ -180,14 +180,12 @@ nufs_unlink(const char *path)
 	int par = tree_lookup(split(path, count_l(path)-1));
 	inode *ptr = get_inode(par);		// Parent
 	int l = tree_lookup(path);
-	inode dd;
+	inode *dd = get_inode(l);
 	
-	memcpy((char*)&dd, (char*)get_inode(l), sizeof(inode));
-	dd.refs-=1;
-	memcpy((char*)get_inode(l), (char*)&dd, sizeof(inode));
+	dd->refs-=1;
 	
 	void *ibm = get_inode_bitmap();
-	bitmap_put(ibm, dd.inum, 0);
+	if (dd->refs==0) bitmap_put(ibm, dd->inum, 0);
 	
 	dirent *file = (dirent*)pages_get_page(ptr->ptrs[0]+5);
 	
