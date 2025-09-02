@@ -16,6 +16,7 @@
 #include "directory.h"
 #include "inode.h"
 #include "string.h"
+#include "bitmap.h"
 
 // implementation for: man 2 access
 // Checks if a file exists.
@@ -35,44 +36,44 @@ int
 nufs_getattr(const char *path, struct stat *st)
 /* This function was written by DeepSeek. */
 {
-    int rv = 0;
-    memset(st, 0, sizeof(struct stat));
-    
-    // Handle root directory
-    if (strcmp(path, "/") == 0) {
-        st->st_mode = S_IFDIR | 0755;
-        st->st_nlink = 2;
-        st->st_size = 0;
-        st->st_uid = getuid();
-        st->st_gid = getgid();
-        st->st_atime = st->st_mtime = st->st_ctime = time(NULL);
-        printf("getattr(%s) -> (%d) {mode: %04o, size: %ld}\n", path, rv, st->st_mode, st->st_size);
-        return 0;
-    }
-    
-    // Look up the inode for this path
-    int inum = tree_lookup(path);
-    if (inum < 0) {
-        rv = -ENOENT;
-    }
-    
-    // Get the inode
-    inode* node = get_inode(inum);
-    if (node == NULL) {
-        rv = -ENOENT;
-    }
-    
-    // Fill in the stat structure
-    st->st_mode = node->mode;
-    st->st_nlink = 1;
-    st->st_size = node->size;
-    st->st_uid = getuid();
-    st->st_gid = getgid();
-    st->st_atime = st->st_mtime = st->st_ctime = time(NULL);
-    st->st_ino = inum;
-    
-    printf("getattr(%s) -> (%d) {mode: %04o, size: %ld}\n", path, rv, st->st_mode, st->st_size);
-    return rv;
+	int rv = 0;
+	memset(st, 0, sizeof(struct stat));
+	
+	// Handle root directory
+	if (strcmp(path, "/") == 0) {
+		st->st_mode = S_IFDIR | 0755;
+		st->st_nlink = 2;
+		st->st_size = 0;
+		st->st_uid = getuid();
+		st->st_gid = getgid();
+		st->st_atime = st->st_mtime = st->st_ctime = time(NULL);
+		printf("getattr(%s) -> (%d) {mode: %04o, size: %ld}\n", path, rv, st->st_mode, st->st_size);
+		return 0;
+	}
+	
+	// Look up the inode for this path
+	int inum = tree_lookup(path);
+	if (inum < 0) {
+		rv = -ENOENT;
+	}
+	
+	// Get the inode
+	inode* node = get_inode(inum);
+	if (node == NULL) {
+		rv = -ENOENT;
+	}
+	
+	// Fill in the stat structure
+	st->st_mode = node->mode;
+	st->st_nlink = 1;
+	st->st_size = node->size;
+	st->st_uid = getuid();
+	st->st_gid = getgid();
+	st->st_atime = st->st_mtime = st->st_ctime = time(NULL);
+	st->st_ino = inum;
+	
+	printf("getattr(%s) -> (%d) {mode: %04o, size: %ld}\n", path, rv, st->st_mode, st->st_size);
+	return rv;
 }
 
 char *partial_path(char *path)
@@ -85,7 +86,7 @@ char *partial_path(char *path)
 		if (path[i] == '/') j++;
 	}
 	for (int k=0; k<DIR_NAME && path[i]!='\0'; k++, i++) partial[k] = path[i];
-	printf("partial : %s\n", partial);
+	
 	return partial;
 }
 
@@ -93,40 +94,40 @@ char *partial_path(char *path)
 // lists the contents of a directory
 int
 nufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
-             off_t offset, struct fuse_file_info *fi)
+			 off_t offset, struct fuse_file_info *fi)
 /* This function was originally written by DeepSeek.
  * Finished by myself. */
 {
-    int rv = 0;
-    
-    // Get the directory listing
-    slist* entries = directory_list(path);
-    slist* current = entries;
-    
-    // Add "." and ".." entries first
-    struct stat st;
-    
-    // Add all directory entries
-    while (current != NULL) {
-        char *relative = partial_path(current->data);
-        
-        // Get file attributes
-        rv = nufs_getattr(current->data, &st);
-        if (rv == 0) {
-        	if (!strcmp(current->data, "/")) filler(buf, ".", &st, 0);
-        	else filler(buf, relative, &st, 0);
-        }
-        
-        free(relative);
-        
-        current = current->next;
-    }
-    
-    // Free the list
-    s_free(entries);
-    
-    printf("readdir(%s) -> %d\n", path, rv);
-    return rv;
+	int rv = 0;
+	
+	// Get the directory listing
+	slist* entries = directory_list(path);
+	slist* current = entries;
+	
+	// Add "." and ".." entries first
+	struct stat st;
+	
+	// Add all directory entries
+	while (current != NULL) {
+		char *relative = partial_path(current->data);
+		
+		// Get file attributes
+		rv = nufs_getattr(current->data, &st);
+		if (rv == 0) {
+			if (!strcmp(current->data, "/")) filler(buf, ".", &st, 0);
+			else filler(buf, relative, &st, 0);
+		}
+		
+		free(relative);
+		
+		current = current->next;
+	}
+	
+	// Free the list
+	s_free(entries);
+	
+	printf("readdir(%s) -> %d\n", path, rv);
+	return rv;
 }
 
 // mknod makes a filesystem object like a file or directory
@@ -175,7 +176,39 @@ nufs_mkdir(const char *path, mode_t mode)
 int
 nufs_unlink(const char *path)
 {
-	int rv = -1;
+	int rv = -ENOENT;
+	int par = tree_lookup(split(path, count_l(path)-1));
+	inode *ptr = get_inode(par);		// Parent
+	int l = tree_lookup(path);
+	inode dd;
+	
+	memcpy((char*)&dd, (char*)get_inode(l), sizeof(inode));
+	dd.refs-=1;
+	memcpy((char*)get_inode(l), (char*)&dd, sizeof(inode));
+	
+	void *ibm = get_inode_bitmap();
+	bitmap_put(ibm, dd.inum, 0);
+	
+	dirent *file = (dirent*)pages_get_page(ptr->ptrs[0]+5);
+	
+	for (int count=0;;count++) {
+		if (!strncmp(file->name, path, DIR_NAME))
+		{
+			dirent temp;
+			temp.active=false;
+			memcpy((char*)file, (char*)&temp, sizeof(dirent));
+			rv = 0;
+			break;
+		}
+		if (file->next==false) break;
+		else if ( count == 4096/sizeof(dirent) ) file = (dirent*)pages_get_page(ptr->ptrs[1]+5);	// Data pages start at 5
+		else if ( count == 8192/sizeof(dirent) ) {
+			count = 0;
+			ptr = get_inode(ptr->iptr);
+		}
+		else file++;
+	}
+	
 	printf("unlink(%s) -> %d\n", path, rv);
 	return rv;
 }
