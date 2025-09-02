@@ -155,6 +155,7 @@ nufs_mknod(const char *path, mode_t mode, dev_t rdev)
 	}
 	fn.mode=mode;
 	fn.refs=0;
+	fn.ptrs[0]=alloc_page()-5;
 	memcpy((char*)get_inode(inum), (char*)&fn, sizeof(inode));
 	
 	directory_put(dd, path, inum);

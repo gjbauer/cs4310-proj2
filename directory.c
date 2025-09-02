@@ -51,17 +51,13 @@ int directory_put(inode* dd, const char* name, int inum)
 	
 	dirent *ptr = (dirent*)pages_get_page(dd->ptrs[0]+5);
 	
-	inode *fn = get_inode(inum);
-	fn->refs+=1;
-	
-	printf("refs : %d\n", fn->refs);
-	
 	for (int count=0 ;; count++)
 	{
 		if ( count == 4096/sizeof(dirent) ) ptr = (dirent*)pages_get_page(dd->ptrs[1]+5);	// Data pages start at 5
 		else if ( count == 8192/sizeof(dirent) ) {
 			count = 0;
 			dd = get_inode(dd->iptr);
+			ptr = (dirent*)pages_get_page(dd->ptrs[0]+5);
 		}
 		else if (ptr->next == false ) {
 			ptr->next=true;
@@ -86,6 +82,7 @@ int directory_delete(inode* dd, const char* name)
 		else if ( count == 8192/sizeof(dirent) ) {
 			count = 0;
 			dd = get_inode(dd->iptr);
+			ptr = (dirent*)pages_get_page(dd->ptrs[0]+5);
 		}
 		else if ( !strcmp((ptr+1)->name, name) ) {
 			(ptr+1)->active=false;
