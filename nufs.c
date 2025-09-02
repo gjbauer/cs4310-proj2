@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <bsd/string.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #define FUSE_USE_VERSION 26
 #include <fuse.h>
@@ -74,12 +75,27 @@ nufs_getattr(const char *path, struct stat *st)
     return rv;
 }
 
+char *partial_path(char *path)
+{
+	char *partial = (char*)malloc(DIR_NAME * sizeof(char));
+	
+	int i,j;
+	for (i=0, j=0; i < DIR_NAME && j<count_l(path); i++)
+	{
+		if (path[i] == '/') j++;
+	}
+	for (int k=0; k<DIR_NAME && path[i]!='\0'; k++, i++) partial[k] = path[i];
+	//printf("partial : %s\n", partial);
+	return partial;
+}
+
 // implementation for: man 2 readdir
 // lists the contents of a directory
 int
 nufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
              off_t offset, struct fuse_file_info *fi)
-/* This function was written by DeepSeek. */
+/* This function was originally written by DeepSeek.
+ * Finished by myself. */
 {
     int rv = 0;
     
@@ -97,19 +113,15 @@ nufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
     
     // Add all directory entries
     while (current != NULL) {
-        // Build full path to get attributes
-        char full_path[256];
-        if (strcmp(path, "/") == 0) {
-            snprintf(full_path, sizeof(full_path), "/%s", current->data);
-        } else {
-            snprintf(full_path, sizeof(full_path), "%s/%s", path, current->data);
-        }
+        char *relative = partial_path(current->data);
         
         // Get file attributes
-        rv = nufs_getattr(full_path, &st);
+        rv = nufs_getattr(current->data, &st);
         if (rv == 0) {
-            filler(buf, current->data, &st, 0);
+            filler(buf, relative, &st, 0);
         }
+        
+        free(relative);
         
         current = current->next;
     }
