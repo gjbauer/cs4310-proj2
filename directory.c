@@ -51,6 +51,11 @@ int directory_put(inode* dd, const char* name, int inum)
 	
 	dirent *ptr = (dirent*)pages_get_page(dd->ptrs[0]+5);
 	
+	inode *fn = get_inode(inum);
+	fn->refs+=1;
+	
+	printf("refs : %d\n", fn->refs);
+	
 	for (int count=0 ;; count++)
 	{
 		if ( count == 4096/sizeof(dirent) ) ptr = (dirent*)pages_get_page(dd->ptrs[1]+5);	// Data pages start at 5

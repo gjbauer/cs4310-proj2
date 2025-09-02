@@ -154,7 +154,7 @@ nufs_mknod(const char *path, mode_t mode, dev_t rdev)
 		ptr->inum=dd->inum;
 	}
 	fn.mode=mode;
-	fn.refs=1;
+	fn.refs=0;
 	memcpy((char*)get_inode(inum), (char*)&fn, sizeof(inode));
 	
 	directory_put(dd, path, inum);
@@ -214,7 +214,12 @@ nufs_unlink(const char *path)
 int
 nufs_link(const char *from, const char *to)
 {
-	int rv = -1;
+	int rv = 0;
+	int l = tree_lookup(from);
+	if ( l == -ENOENT ) rv = -ENOENT;
+	inode *parent = get_inode(tree_lookup(split(to, count_l(to)-1)));
+	
+	directory_put(parent, to, l);
 	printf("link(%s => %s) -> %d\n", from, to, rv);
 	return rv;
 }

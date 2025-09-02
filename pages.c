@@ -48,7 +48,7 @@ pages_init(const char* path)
     	ins.size=0;
 	ins.ptrs[0]=0, ins.ptrs[1]=0;
 	ins.refs==0;
-    	memcpy(((inode*)in+i), &ins, sizeof(ins));
+    	memcpy((char*)get_inode(i), (char*)&ins, sizeof(ins));
     }
     
 }
