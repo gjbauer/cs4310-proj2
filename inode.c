@@ -39,6 +39,7 @@ alloc_inode(const char *path) {
 		inode dd;
 		memcpy((char*)&dd, (char*)get_inode(hash(path)), sizeof(inode));
 		dd.ptrs[0]=alloc_page();
+		dd.iptr=0;
 		memcpy((char*)get_inode(hash(path)), (char*)&dd, sizeof(inode));
 		return hash(path);
 	}
