@@ -1,6 +1,8 @@
 #!/bin/bash
 
-for n in {1..5}; 
+mkdir mnt/nested
+
+for n in {1..50}; 
 do
-    touch "mnt/"$n".nums"
+    touch "mnt/nested/"$n".nums"
 done
