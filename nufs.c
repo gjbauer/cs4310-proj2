@@ -156,6 +156,7 @@ nufs_mknod(const char *path, mode_t mode, dev_t rdev)
 	fn.mode=mode;
 	fn.refs=0;
 	fn.ptrs[0]=alloc_page()-5;
+	fn.ptrs[1]=alloc_page()-5;
 	memcpy((char*)get_inode(inum), (char*)&fn, sizeof(inode));
 	
 	directory_put(dd, path, inum);
@@ -176,41 +177,20 @@ nufs_mkdir(const char *path, mode_t mode)
 
 int
 nufs_unlink(const char *path)
-/* This function was written by DeepSeek. */
+/* This function was originally written by DeepSeek.
+ * Finished by myself. */
 {
-	// Split path into directory and filename
-	char* last_slash = strrchr(path, '/');
-	if (last_slash == NULL) {
-		return -EINVAL;
-	}
-	
-	char dir_path[256];
-	char filename[DIR_NAME];
-	
-	int dir_len = last_slash - path;
-	if (dir_len == 0) {
-		strcpy(dir_path, "/");
-		strncpy(filename, path + 1, DIR_NAME - 1);
-	} else {
-		strncpy(dir_path, path, dir_len);
-		dir_path[dir_len] = '\0';
-		strncpy(filename, last_slash + 1, DIR_NAME - 1);
-	}
-	filename[DIR_NAME - 1] = '\0';
 	
 	// Look up parent directory
-	int dir_inum = tree_lookup(dir_path);
+	int dir_inum = tree_lookup(split(path, count_l(path)-1));
 	if (dir_inum < 0) {
 		return -ENOENT;
 	}
 	
 	inode* dir_node = get_inode(dir_inum);
-	if (dir_node == NULL || !S_ISDIR(dir_node->mode)) {
-		return -ENOTDIR;
-	}
 	
 	// Look up the file
-	int file_inum = directory_lookup(dir_node, filename);
+	int file_inum = directory_lookup(dir_node, path);
 	if (file_inum < 0) {
 		return -ENOENT;
 	}
@@ -221,7 +201,7 @@ nufs_unlink(const char *path)
 	}
 	
 	// Remove directory entry
-	int rv = directory_delete(dir_node, filename);
+	int rv = directory_delete(dir_node, path);
 	if (rv < 0) {
 		return rv;
 	}
@@ -236,10 +216,10 @@ nufs_unlink(const char *path)
 			}
 		}
 		
-		// Free indirect page
+		/*// Free indirect page	<- That's wrong, DeepSeek. This should be a loop which frees all iptr inodes...can implement later...
 		if (file_node->iptr != 0) {
 			free_page(file_node->iptr);
-		}
+		}*/
 		
 		// Free inode
 		void* ibm = get_inode_bitmap();
