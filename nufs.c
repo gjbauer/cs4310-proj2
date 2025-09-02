@@ -85,7 +85,7 @@ char *partial_path(char *path)
 		if (path[i] == '/') j++;
 	}
 	for (int k=0; k<DIR_NAME && path[i]!='\0'; k++, i++) partial[k] = path[i];
-	//printf("partial : %s\n", partial);
+	printf("partial : %s\n", partial);
 	return partial;
 }
 
@@ -118,7 +118,8 @@ nufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
         // Get file attributes
         rv = nufs_getattr(current->data, &st);
         if (rv == 0) {
-            filler(buf, relative, &st, 0);
+        	if (!strcmp(current->data, "/")) filler(buf, ".", &st, 0);
+        	else filler(buf, relative, &st, 0);
         }
         
         free(relative);
