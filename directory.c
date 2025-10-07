@@ -150,7 +150,7 @@ void print_directory(inode* dd)
 			printf("%s\n", ptr->name);
 			count = 0;
 			dd = get_inode(dd->iptr);
-			ptr = (dirent*)pages_get_page(dd->ptrs[0])
+			ptr = (dirent*)pages_get_page(dd->ptrs[0]);
 		}
 		else {
 			printf("%s\n", ptr->name);

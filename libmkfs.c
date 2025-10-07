@@ -13,7 +13,7 @@ mkfs() {
 	dirent root;
 	strcpy(root.name, "/");
 	root.inum = 0;
-	root.next==false;
+	root.next=false;
 	inode root_node;
 	root_node.ptrs[0]=alloc_page();
 	root_node.size=sizeof(dirent);

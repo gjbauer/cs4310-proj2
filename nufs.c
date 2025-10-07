@@ -303,7 +303,8 @@ nufs_open(const char *path, struct fuse_file_info *fi)
 // Actually read data
 int
 nufs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi)
-/* This function was written by DeepSeek. */
+/* This function was originally written by DeepSeek.
+ * Finished by myself. */
 {
 	// Find the inode for the given path
 	int inum = tree_lookup(path);
@@ -334,6 +335,7 @@ nufs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_fi
 	int remaining = size;
 	off_t current_offset = offset;
 	
+	int i=0;
 	while (remaining > 0) {
 		// Calculate which page we're reading from
 		int page_index = current_offset / 4096;
@@ -342,25 +344,18 @@ nufs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_fi
 		// Get the physical page number for this logical page
 		int pnum = -1;
 		
-		if (page_index < 2) {
-			// Direct pointer
-			pnum = node->ptrs[page_index];
-		} else {
-			// Indirect pointer - need to read from the indirect page
-			if (node->iptr == 0) {
-				break; // No indirect page allocated
+		for (i=0; i < page_index; i++)
+		{
+			if (i % 2 == 0 && i>0) {
+				if (node->iptr == 0) {
+					break; // No indirect pointer allocated
+				}
+				node = get_inode(node->iptr);
+				i=0;
 			}
-			
-			// Read the page number from the indirect page
-			int* indirect_page = pages_get_page(node->iptr);
-			int indirect_index = page_index - 2;
-			
-			if (indirect_index >= 1024) {
-				break; // Beyond maximum supported pages
-			}
-			
-			pnum = indirect_page[indirect_index];
 		}
+		// Direct pointer
+		pnum = node->ptrs[i%2];
 		
 		if (pnum <= 0) {
 			break; // No page allocated here
@@ -382,6 +377,7 @@ nufs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_fi
 		bytes_read += bytes_to_read;
 		remaining -= bytes_to_read;
 		current_offset += bytes_to_read;
+		i++;
 	}
 	
 	printf("read(%s, %ld bytes, @+%ld) -> %d\n", path, size, offset, bytes_read);
@@ -391,7 +387,8 @@ nufs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_fi
 // Actually write data
 int
 nufs_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi)
-/* This function was written by DeepSeek. */
+/* This function was originally written by DeepSeek.
+ * Finished by myself. */
 {
 	// Find the inode for the given path
 	int inum = tree_lookup(path);
@@ -404,19 +401,18 @@ nufs_write(const char *path, const char *buf, size_t size, off_t offset, struct 
 		return -ENOENT;
 	}
 	
+	printf("node size = %d\n", node->size);
 	// If writing beyond current size, we need to grow the file
 	if (offset + size > node->size) {
 		int new_size = offset + size;
-		int rv = grow_inode(node, new_size);
-		if (rv < 0) {
-			return -ENOSPC; // No space left
-		}
+		grow_inode(node, new_size);
 	}
 	
 	int bytes_written = 0;
 	int remaining = size;
 	off_t current_offset = offset;
 	
+	int i=0;
 	while (remaining > 0) {
 		// Calculate which page we're writing to
 		int page_index = current_offset / 4096;
@@ -425,25 +421,20 @@ nufs_write(const char *path, const char *buf, size_t size, off_t offset, struct 
 		// Get the physical page number for this logical page
 		int pnum = -1;
 		
-		if (page_index < 2) {
-			// Direct pointer
-			pnum = node->ptrs[page_index];
-		} else {
-			// Indirect pointer - need to read from the indirect page
-			if (node->iptr == 0) {
-				return -ENOSPC; // No indirect page allocated (should have been allocated by grow_inode)
+		for (i=0; i < page_index; i++)
+		{
+			if (i % 2 == 0 && i>0) {
+				if (node->iptr == 0) {
+					break; // No indirect pointer allocated
+				}
+				node = get_inode(node->iptr);
+				i=0;
 			}
-			
-			// Read the page number from the indirect page
-			int* indirect_page = pages_get_page(node->iptr);
-			int indirect_index = page_index - 2;
-			
-			if (indirect_index >= 1024) {
-				return -EFBIG; // File too large
-			}
-			
-			pnum = indirect_page[indirect_index];
 		}
+		// Direct pointer
+		pnum = node->ptrs[i%2];
+		
+		printf("Writing to page number %d\n", pnum);
 		
 		if (pnum <= 0) {
 			return -ENOSPC; // Page not allocated (should have been allocated by grow_inode)
