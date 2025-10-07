@@ -13,7 +13,6 @@ int directory_lookup(inode* dd, const char* name)
 	dirent *file = (dirent*)pages_get_page(ptr->ptrs[0]);	
 	
 	for (int count=0;;count++) {
-		printf("file->name = %s\n", file->name);
 		if (!strncmp(file->name, name, DIR_NAME)) return file->inum;
 		if (file->next==false) break;
 		else if ( count == 4096/sizeof(dirent) ) file = (dirent*)pages_get_page(ptr->ptrs[1]);	
@@ -30,7 +29,6 @@ int directory_lookup(inode* dd, const char* name)
 
 int tree_lookup(const char* path) {
 	inode *root = get_inode(0);
-	printf("root->ptrs[0] = %d\n", root->ptrs[0]);
 	inode *ptr = root;
 	dirent *file = (dirent*)pages_get_page(ptr->ptrs[0]);	
 	int level = count_l(path);
@@ -52,7 +50,6 @@ int directory_put(inode* dd, const char* name, int inum)
 	file.inum = inum;
 	file.active = true;
 	
-	printf("dd->ptrs[0] = %d\n", dd->ptrs[0]);
 	dirent *ptr = (dirent*)pages_get_page(dd->ptrs[0]);
 	
 	for (int count=0 ;; count++)
@@ -77,7 +74,6 @@ int directory_put(inode* dd, const char* name, int inum)
 	}
 	
 	memcpy((char*)ptr, (char*)&file, sizeof(dirent));
-	printf("ptr->name = %s\n", ptr->name);
 	
 	return 0;
 }
@@ -154,6 +150,7 @@ void print_directory(inode* dd)
 			printf("%s\n", ptr->name);
 			count = 0;
 			dd = get_inode(dd->iptr);
+			ptr = (dirent*)pages_get_page(dd->ptrs[0])
 		}
 		else {
 			printf("%s\n", ptr->name);

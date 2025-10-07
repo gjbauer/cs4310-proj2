@@ -15,8 +15,8 @@ void bitmap_put(void* bm, int ii, int vv) {
 void bitmap_print(void* bm, int size) {
 	printf("===BITMAP START===\n");
 	for (int ii = 0; ii < size; ++ii) {
-            printf("%d", bitmap_get(bm, ii));
-        }
-        printf("\n===BITMAP END===\n");
+		printf("%d", bitmap_get(bm, ii));
+	}
+	printf("\n===BITMAP END===\n");
 }
 
