@@ -170,7 +170,9 @@ nufs_unlink(const char *path)
 {
 	
 	// Look up parent directory
-	int dir_inum = tree_lookup(split(path, count_l(path)-1));
+	char *ppath = split(path, count_l(path)-1);
+	int dir_inum = tree_lookup(ppath);
+	free(ppath);
 	if (dir_inum < 0) {
 		return -ENOENT;
 	}
@@ -248,7 +250,9 @@ int
 nufs_rename(const char *from, const char *to)
 {
 	int rv = -1;
-	int l = tree_lookup(split(from, count_l(from)-1));
+	char *ppath = split(from, count_l(from)-1);
+	int l = tree_lookup(ppath);
+	free(ppath);
 	inode *dd = get_inode(l);
 	
 	directory_delete(dd, from);

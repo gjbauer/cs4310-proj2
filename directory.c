@@ -34,7 +34,9 @@ int tree_lookup(const char* path) {
 	int level = count_l(path);
 	
 	for (int i=0; i<level; i++) {
-		int inum = directory_lookup(ptr, split(path, i));
+		char *ppath = split(path, i);
+		int inum = directory_lookup(ptr, ppath);
+		free(ppath);
 		if (inum == -ENOENT) return -ENOENT;
 		ptr = get_inode(inum);
 	}
