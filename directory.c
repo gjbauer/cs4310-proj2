@@ -46,7 +46,12 @@ int directory_put(inode* dd, const char* name, int inum)
 {
 	// Setup file
 	dirent file;
-	strncpy(file.name, name, DIR_NAME);
+	//strcpy(file.name, name);
+	int i;
+	for (i=0; name[i]!=0 && i<DIR_NAME; i++) file.name[i] = name[i];
+	file.name[i] = 0;
+	printf("name size = %d\n", i);
+	printf("file.name = %s\n", file.name);
 	file.inum = inum;
 	file.active = true;
 	
@@ -56,13 +61,14 @@ int directory_put(inode* dd, const char* name, int inum)
 	{
 		if ( count == 4096/sizeof(dirent) )
 		{
-			if (dd->ptrs[1]==0) dd->ptrs[1] = alloc_inode();
+			if (dd->ptrs[1]==0) dd->ptrs[1] = alloc_page();
 			ptr = (dirent*)pages_get_page(dd->ptrs[1]);
 		}
 		else if ( count == 8192/sizeof(dirent) ) {
 			count = 0;
 			if (dd->iptr==0) dd->iptr=alloc_inode();
 			dd = get_inode(dd->iptr);
+			dd->ptrs[1] = alloc_page();
 			ptr = (dirent*)pages_get_page(dd->ptrs[0]);
 		}
 		else if (ptr->next == false ) {
@@ -73,7 +79,7 @@ int directory_put(inode* dd, const char* name, int inum)
 		else ptr++;
 	}
 	
-	memcpy((char*)ptr, (char*)&file, sizeof(dirent));
+	memcpy(ptr, &file, sizeof(dirent));
 	
 	return 0;
 }
@@ -81,6 +87,7 @@ int directory_put(inode* dd, const char* name, int inum)
 int directory_delete(inode* dd, const char* name)
 {	
 	dirent *ptr = (dirent*)pages_get_page(dd->ptrs[0]);
+	dirent *prev = NULL;
 	
 	for (int count=0 ;; count++)
 	{
@@ -90,17 +97,15 @@ int directory_delete(inode* dd, const char* name)
 			dd = get_inode(dd->iptr);
 			ptr = (dirent*)pages_get_page(dd->ptrs[0]);
 		}
-		else if ( !strcmp((ptr+1)->name, name) ) {
-			(ptr+1)->active=false;
-			ptr->next = (ptr+1)->next;
-			inode dd;
-			memcpy((char*)&dd, get_inode((ptr+1)->inum), sizeof(inode));
-			dd.refs -= 1;
-			memcpy(get_inode((ptr+1)->inum), (char*)&dd, sizeof(inode));
-			if ( dd.refs == 0 ) bitmap_put(get_inode_bitmap(), dd.inum, 0);
+		else if ( !strcmp(ptr->name, name) ) {
+			ptr->active=false;
+			if (prev) prev->next = ptr->next;
 			break;
 		}
-		else ptr++;
+		else {
+			prev = ptr;
+			ptr++;
+		}
 	}
 
 	return 0;
@@ -115,7 +120,7 @@ slist* directory_list(const char* path)
 	char *data = (char*)malloc(2048 * (DIR_NAME+1) * sizeof(char));	// DIR_NAME+1 to include our delimiter ;)
 	
 	for (int i=0, count=0 ;; i++, count++) {
-		if (file->active) strncat(data, file->name, DIR_NAME);
+		if (file->active==true) strncat(data, file->name, DIR_NAME);
 		strncat(data, ";", 1);					// Choose a delimiter...I think a semicolon ( ; ) will work...
 		if (file->next==false) break;
 		else if ( count == 4096/sizeof(dirent) ) file = (dirent*)pages_get_page(ptr->ptrs[1]);	

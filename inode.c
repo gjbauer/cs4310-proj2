@@ -33,9 +33,12 @@ alloc_inode() {
 			bitmap_put(ibm, ii, 1);
 			node = get_inode(ii);
 			node->ptrs[0]=0;
-			node->ptrs[1]=1;
+			node->ptrs[1]=0;
 			node->size=0;
 			node->iptr=0;
+			node->refs=1;
+			node->inum=ii;
+			node->size=0;
 			printf("+ alloc_inode() -> %d\n", ii);
 			return ii;
 		}

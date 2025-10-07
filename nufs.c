@@ -80,12 +80,14 @@ char *partial_path(char *path)
 {
 	char *partial = (char*)malloc(DIR_NAME * sizeof(char));
 	
-	int i,j;
+	int i,j,k;
 	for (i=0, j=0; i < DIR_NAME && j<count_l(path); i++)
 	{
 		if (path[i] == '/') j++;
 	}
-	for (int k=0; k<DIR_NAME && path[i]!='\0'; k++, i++) partial[k] = path[i];
+	for (k=0; k<DIR_NAME && path[i]!='\0'; k++, i++) partial[k] = path[i];
+	
+	partial[k]='\0';
 	
 	return partial;
 }
@@ -142,22 +144,8 @@ nufs_mknod(const char *path, mode_t mode, dev_t rdev)
 	inode *dd = get_inode(l);
 	
 	int inum = alloc_inode();
-	inode fn;
-	memcpy((char*)&fn, (char*)get_inode(inum), sizeof(inode));
-	/*if (mode < 10000) mode = mode | 0100000;		// Regular file
-	else {			// Directory
-		dirent *ptr = (dirent*)pages_get_page(get_inode(inum)->ptrs[0]+5);
-		strcpy(ptr->name, ".");
-		ptr->inum=inum;
-		ptr->next=true;
-		ptr++;
-		strcpy(ptr->name, "..");
-		ptr->inum=dd->inum;
-	}*/
-	fn.mode=mode;
-	fn.refs=0;
-	fn.ptrs[0]=alloc_page();
-	memcpy((char*)get_inode(inum), (char*)&fn, sizeof(inode));
+	inode *fn = get_inode(inum);
+	fn->mode=mode;
 	
 	directory_put(dd, path, inum);
 
@@ -222,8 +210,7 @@ nufs_unlink(const char *path)
 		}*/
 		
 		// Free inode
-		void* ibm = get_inode_bitmap();
-		bitmap_put(ibm, file_inum, 0);
+		free_inode(file_inum);
 	}
 	
 	printf("unlink(%s) -> %d\n", path, rv);
@@ -236,7 +223,11 @@ nufs_link(const char *from, const char *to)
 	int rv = 0;
 	int l = tree_lookup(from);
 	if ( l == -ENOENT ) rv = -ENOENT;
-	inode *parent = get_inode(tree_lookup(split(to, count_l(to)-1)));
+	char *ppath = split(to, count_l(to)-1);
+	inode *parent = get_inode(tree_lookup(ppath));
+	free(ppath);
+	inode *from_node = get_inode(tree_lookup(from));
+	from_node->refs++;
 	
 	directory_put(parent, to, l);
 	printf("link(%s => %s) -> %d\n", from, to, rv);

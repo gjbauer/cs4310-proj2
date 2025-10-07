@@ -168,7 +168,10 @@ for my $ii (1..50) {
     write_text("numbers/$ii.num", "$ii");
 }
 
-my $nn = `ls mnt/numbers | wc -l`;
+opendir(my $ndh, "mnt/numbers") or die $!;                                                     
+my @nfiles = grep { !/^\./ && -f "mnt/numbers/$_" } readdir($ndh);                              
+closedir($ndh);                                                                                
+my $nn = scalar @nfiles; 
 ok($nn == 50, "created 50 files");
 
 for my $ii (1..5) {
@@ -188,7 +191,10 @@ ok(!-d "mnt/numbers", "numbers dir doesn't exist after umount");
 
 mount();
 
-my $mm = `ls mnt/numbers | wc -l`;
+opendir(my $mdh, "mnt/numbers") or die $!;                                                     
+my @mfiles = grep { !/^\./ && -f "mnt/numbers/$_" } readdir($mdh);                              
+closedir($mdh);                                                                                
+my $mm = scalar @mfiles; 
 ok($mm == 46, "deleted 4 files");
 
 unmount();
