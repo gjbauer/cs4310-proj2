@@ -7,7 +7,17 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-//void print_inode(inode* node) {}
+void print_inode(inode* node)
+{
+	printf("Printing inode information...\n");
+	printf("refs = %d\n", node->refs);
+	printf("mode = %d\n", node->mode);
+	printf("size = %d\n", node->size);
+	for (int i=0; i<2; i++) printf("ptrs[%d] = %d\n", i, node->ptrs[i]);
+	printf("iptr = %d\n", node->iptr);
+	printf("inum = %d\n", node->inum);
+	printf("Inode printing complete!\n");
+}
 
 inode* get_inode(int inum) {
 	void *ptr = get_inode_start();
@@ -15,34 +25,17 @@ inode* get_inode(int inum) {
 }
 
 int
-inode_find(const char *path) {
-	void* ptr = (void*)get_inode_bitmap();
-	for (int i=2; i<512; i++) {
-		if (bitmap_get(ptr, i)==0) {
-			return i;
-		}
-	}
-	return alloc_inode(path);
-}
-
-int
-alloc_inode(const char *path) {
-	char *hpath;
-	static char str[DIR_NAME];
+alloc_inode() {
 	void* ibm = get_inode_bitmap();
-	if (bitmap_get(ibm, hash(path))==1 || hash(path)==1 || hash(path)==0) {	// TODO: Fix this! We need the feature, but it is overflowing the stack...
-		strncpy(str, path, DIR_NAME);
-		str[strlen(path)-1] = hash(path);
-		return alloc_inode(str);
-	} else {
-		bitmap_put(ibm, hash(path), 1);
-		inode dd;
-		memcpy((char*)&dd, (char*)get_inode(hash(path)), sizeof(inode));
-		dd.ptrs[0]=alloc_page();
-		dd.iptr=0;
-		memcpy((char*)get_inode(hash(path)), (char*)&dd, sizeof(inode));
-		return hash(path);
-	}
+	for (int ii = 0; ii < 4096*64; ++ii) {
+		if (!bitmap_get(ibm, ii)) {
+			bitmap_put(ibm, ii, 1);
+			printf("+ alloc_inode() -> %d\n", ii);
+			return ii;
+        	}
+    	}
+
+	return -1;
 }
 
 int grow_inode(inode* node, int size)

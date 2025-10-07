@@ -10,15 +10,17 @@
 int directory_lookup(inode* dd, const char* name)
 {
 	inode *ptr = dd;
-	dirent *file = (dirent*)pages_get_page(ptr->ptrs[0]+5);	// Data pages start at 5
+	dirent *file = (dirent*)pages_get_page(ptr->ptrs[0]);	
 	
 	for (int count=0;;count++) {
+		printf("file->name = %s\n", file->name);
 		if (!strncmp(file->name, name, DIR_NAME)) return file->inum;
 		if (file->next==false) break;
-		else if ( count == 4096/sizeof(dirent) ) file = (dirent*)pages_get_page(ptr->ptrs[1]+5);	// Data pages start at 5
+		else if ( count == 4096/sizeof(dirent) ) file = (dirent*)pages_get_page(ptr->ptrs[1]);	
 		else if ( count == 8192/sizeof(dirent) ) {
 			count = 0;
 			ptr = get_inode(ptr->iptr);
+			file = (dirent*)pages_get_page(ptr->ptrs[0]);
 		}
 		else file++;
 	}
@@ -28,8 +30,9 @@ int directory_lookup(inode* dd, const char* name)
 
 int tree_lookup(const char* path) {
 	inode *root = get_inode(0);
+	printf("root->ptrs[0] = %d\n", root->ptrs[0]);
 	inode *ptr = root;
-	dirent *file = (dirent*)pages_get_page(ptr->ptrs[0]+5);	// Data pages start at 5
+	dirent *file = (dirent*)pages_get_page(ptr->ptrs[0]);	
 	int level = count_l(path);
 	
 	for (int i=0; i<level; i++) {
@@ -49,16 +52,21 @@ int directory_put(inode* dd, const char* name, int inum)
 	file.inum = inum;
 	file.active = true;
 	
-	dirent *ptr = (dirent*)pages_get_page(dd->ptrs[0]+5);
+	printf("dd->ptrs[0] = %d\n", dd->ptrs[0]);
+	dirent *ptr = (dirent*)pages_get_page(dd->ptrs[0]);
 	
 	for (int count=0 ;; count++)
 	{
-		if ( count == 4096/sizeof(dirent) ) ptr = (dirent*)pages_get_page(dd->ptrs[1]+5);	// Data pages start at 5
+		if ( count == 4096/sizeof(dirent) )
+		{
+			if (dd->ptrs[1]==0) dd->ptrs[1] = alloc_inode();
+			ptr = (dirent*)pages_get_page(dd->ptrs[1]);
+		}
 		else if ( count == 8192/sizeof(dirent) ) {
 			count = 0;
-			if (dd->iptr=0) dd->iptr=alloc_inode(".");
+			if (dd->iptr==0) dd->iptr=alloc_inode();
 			dd = get_inode(dd->iptr);
-			ptr = (dirent*)pages_get_page(dd->ptrs[0]+5);
+			ptr = (dirent*)pages_get_page(dd->ptrs[0]);
 		}
 		else if (ptr->next == false ) {
 			ptr->next=true;
@@ -69,21 +77,22 @@ int directory_put(inode* dd, const char* name, int inum)
 	}
 	
 	memcpy((char*)ptr, (char*)&file, sizeof(dirent));
+	printf("ptr->name = %s\n", ptr->name);
 	
 	return 0;
 }
 
 int directory_delete(inode* dd, const char* name)
 {	
-	dirent *ptr = (dirent*)pages_get_page(dd->ptrs[0]+5);
+	dirent *ptr = (dirent*)pages_get_page(dd->ptrs[0]);
 	
 	for (int count=0 ;; count++)
 	{
-		if ( count == 4096/sizeof(dirent) ) ptr = (dirent*)pages_get_page(dd->ptrs[1]+5);	// Data pages start at 5
+		if ( count == 4096/sizeof(dirent) ) ptr = (dirent*)pages_get_page(dd->ptrs[1]);	
 		else if ( count == 8192/sizeof(dirent) ) {
 			count = 0;
 			dd = get_inode(dd->iptr);
-			ptr = (dirent*)pages_get_page(dd->ptrs[0]+5);
+			ptr = (dirent*)pages_get_page(dd->ptrs[0]);
 		}
 		else if ( !strcmp((ptr+1)->name, name) ) {
 			(ptr+1)->active=false;
@@ -105,7 +114,7 @@ slist* directory_list(const char* path)
 {
 	int inum = tree_lookup(path);
 	inode *ptr = get_inode(inum);
-	dirent *file = (dirent*)pages_get_page(ptr->ptrs[0]+5);	// Data pages start at 5
+	dirent *file = (dirent*)pages_get_page(ptr->ptrs[0]);	
 	slist *dirlist;
 	char *data = (char*)malloc(2048 * (DIR_NAME+1) * sizeof(char));	// DIR_NAME+1 to include our delimiter ;)
 	
@@ -113,12 +122,12 @@ slist* directory_list(const char* path)
 		if (file->active) strncat(data, file->name, DIR_NAME);
 		strncat(data, ";", 1);					// Choose a delimiter...I think a semicolon ( ; ) will work...
 		if (file->next==false) break;
-		else if ( count == 4096/sizeof(dirent) ) file = (dirent*)pages_get_page(ptr->ptrs[1]+5);	// Data pages start at 5
+		else if ( count == 4096/sizeof(dirent) ) file = (dirent*)pages_get_page(ptr->ptrs[1]);	
 		else file++;
 		if ( count == 8192/sizeof(dirent) ) {
 			count = 0;
 			ptr = get_inode(ptr->iptr);
-			file = (dirent*)pages_get_page(ptr->ptrs[0]+5);
+			file = (dirent*)pages_get_page(ptr->ptrs[0]);
 		}
 	}
 	
@@ -129,7 +138,7 @@ slist* directory_list(const char* path)
 
 void print_directory(inode* dd)
 {
-	dirent *ptr = (dirent*)pages_get_page(dd->ptrs[0]+5);
+	dirent *ptr = (dirent*)pages_get_page(dd->ptrs[0]);
 	
 	for (int count=0 ;; count++)
 	{
@@ -139,7 +148,7 @@ void print_directory(inode* dd)
 		}
 		else if ( count == 4096/sizeof(dirent) ) {
 			printf("%s\n", ptr->name);
-			ptr = (dirent*)pages_get_page(dd->ptrs[1]+5);	// Data pages start at 5
+			ptr = (dirent*)pages_get_page(dd->ptrs[1]);	
 		}
 		else if ( count == 8192/sizeof(dirent) ) {
 			printf("%s\n", ptr->name);

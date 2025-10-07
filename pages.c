@@ -38,7 +38,7 @@ pages_init(const char* path)
     assert(pages_base != MAP_FAILED);
 
     void* pbm = get_pages_bitmap();
-    for (int i=0; i<5; i++) alloc_page();
+    for (int i=0; i<4; i++) alloc_page();
     void* ibm = get_inode_bitmap();
     for (int i=0; i<=512; i++) bitmap_put(ibm, i, 0);
     inode ins;

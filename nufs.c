@@ -138,12 +138,13 @@ nufs_mknod(const char *path, mode_t mode, dev_t rdev)
 	int rv = 0;
 	char *ppath = split(path, count_l(path)-1);
 	int l = tree_lookup(ppath);
+	free(ppath);
 	inode *dd = get_inode(l);
 	
-	int inum = alloc_inode(path);
+	int inum = alloc_inode();
 	inode fn;
 	memcpy((char*)&fn, (char*)get_inode(inum), sizeof(inode));
-	if (mode < 10000) mode = mode | 0100000;		// Regular file
+	/*if (mode < 10000) mode = mode | 0100000;		// Regular file
 	else {			// Directory
 		dirent *ptr = (dirent*)pages_get_page(get_inode(inum)->ptrs[0]+5);
 		strcpy(ptr->name, ".");
@@ -152,11 +153,10 @@ nufs_mknod(const char *path, mode_t mode, dev_t rdev)
 		ptr++;
 		strcpy(ptr->name, "..");
 		ptr->inum=dd->inum;
-	}
+	}*/
 	fn.mode=mode;
 	fn.refs=0;
-	fn.ptrs[0]=alloc_page()-5;
-	fn.ptrs[1]=alloc_page()-5;
+	fn.ptrs[0]=alloc_page();
 	memcpy((char*)get_inode(inum), (char*)&fn, sizeof(inode));
 	
 	directory_put(dd, path, inum);
