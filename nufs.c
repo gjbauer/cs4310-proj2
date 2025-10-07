@@ -335,7 +335,7 @@ nufs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_fi
 	int remaining = size;
 	off_t current_offset = offset;
 	
-	int i=0;
+	int i;
 	while (remaining > 0) {
 		// Calculate which page we're reading from
 		int page_index = current_offset / 4096;
@@ -344,18 +344,16 @@ nufs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_fi
 		// Get the physical page number for this logical page
 		int pnum = -1;
 		
-		for (i=0; i < page_index; i++)
+		inode *current = node;
+		for (i=page_index; i >= 2; i-=2)
 		{
-			if (i % 2 == 0 && i>0) {
-				if (node->iptr == 0) {
-					break; // No indirect pointer allocated
-				}
-				node = get_inode(node->iptr);
-				i=0;
+			if (current->iptr == 0) {
+				break; // No indirect pointer allocated
 			}
+			current = get_inode(current->iptr);
 		}
 		// Direct pointer
-		pnum = node->ptrs[i%2];
+		pnum = current->ptrs[i];
 		
 		if (pnum <= 0) {
 			break; // No page allocated here
@@ -401,7 +399,6 @@ nufs_write(const char *path, const char *buf, size_t size, off_t offset, struct 
 		return -ENOENT;
 	}
 	
-	printf("node size = %d\n", node->size);
 	// If writing beyond current size, we need to grow the file
 	if (offset + size > node->size) {
 		int new_size = offset + size;
@@ -412,7 +409,7 @@ nufs_write(const char *path, const char *buf, size_t size, off_t offset, struct 
 	int remaining = size;
 	off_t current_offset = offset;
 	
-	int i=0;
+	int i;
 	while (remaining > 0) {
 		// Calculate which page we're writing to
 		int page_index = current_offset / 4096;
@@ -421,15 +418,12 @@ nufs_write(const char *path, const char *buf, size_t size, off_t offset, struct 
 		// Get the physical page number for this logical page
 		int pnum = -1;
 		
-		for (i=0; i < page_index; i++)
+		for (i=page_index; i >= 2; i-=2)
 		{
-			if (i % 2 == 0 && i>0) {
-				if (node->iptr == 0) {
-					break; // No indirect pointer allocated
-				}
-				node = get_inode(node->iptr);
-				i=0;
+			if (node->iptr == 0) {
+				break; // No indirect pointer allocated
 			}
+			node = get_inode(node->iptr);
 		}
 		// Direct pointer
 		pnum = node->ptrs[i%2];

@@ -92,9 +92,9 @@ int shrink_inode(inode* node, int size)
 		return 0;
 	}
 	
-	for (int i=0; i<needed_pages; i++)
+	for (int i=0; i<needed_pages; i+=2)
 	{
-		if (i%2==0&&i>0) temp = get_inode(temp->iptr);
+		if (i>0) temp = get_inode(temp->iptr);
 	}
 	
 	inode *last = node;
